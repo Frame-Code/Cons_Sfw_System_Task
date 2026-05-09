@@ -60,6 +60,28 @@ class TaskController {
         echo json_encode(['task' => $task]);
     }
 
+    public static function updateStatus(int $id): void {
+        self::requireAuth();
+        $data   = json_decode(file_get_contents('php://input'), true);
+        $estado = trim($data['estado'] ?? '');
+
+        $estadosValidos = ['Pendiente', 'En progreso', 'Terminado'];
+        if (!in_array($estado, $estadosValidos)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Estado inválido.']);
+            return;
+        }
+
+        Task::updateStatus($id, $estado);
+        echo json_encode(['message' => 'Estado actualizado.']);
+    }
+
+    public static function delete(int $id): void {
+        self::requireAuth();
+        Task::delete($id);
+        echo json_encode(['message' => 'Tarea eliminada.']);
+    }
+
     public static function users(): void {
         self::requireAuth();
         $users = User::getAll();

@@ -24,6 +24,13 @@ class Project {
         return $stmt->fetchAll();
     }
 
+    public static function update(int $id, string $nombre, string $descripcion): bool {
+        $db = getDB();
+        $stmt = $db->prepare("UPDATE projects SET nombre = ?, descripcion = ? WHERE id = ?");
+        $stmt->execute([$nombre, $descripcion, $id]);
+        return $stmt->rowCount() >= 0;
+    }
+
     public static function findById(int $id): ?array {
         $db = getDB();
         $stmt = $db->prepare("

@@ -132,18 +132,54 @@ async function loadTasks() {
 
 // ---- Renderizar tarea ----
 function renderTask(t) {
-  const badgeClass = estadoBadge(t.estado);
   const responsable = t.responsable_nombre || 'Sin asignar';
 
   return `
-    <div class="task-item" onclick="openTask(${t.id})">
-      <div>
+    <div class="task-item">
+      <div onclick="openTask(${t.id})" style="cursor:pointer; flex:1;">
         <div class="task-title">${escapeHtml(t.titulo)}</div>
         <div class="task-meta">Responsable: ${escapeHtml(responsable)}</div>
       </div>
-      <span class="badge ${badgeClass}">${escapeHtml(t.estado)}</span>
+      <div style="display:flex; align-items:center; gap:10px;">
+        <select class="estado-select" onchange="changeStatus(${t.id}, this.value)" onclick="event.stopPropagation()">
+          <option value="Pendiente"   ${t.estado==='Pendiente'   ? 'selected':''}>Pendiente</option>
+          <option value="En progreso" ${t.estado==='En progreso' ? 'selected':''}>En progreso</option>
+          <option value="Terminado"   ${t.estado==='Terminado'   ? 'selected':''}>Terminado</option>
+        </select>
+        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation(); deleteTask(${t.id})">Eliminar</button>
+      </div>
     </div>
   `;
+}
+
+// ---- Cambiar estado de tarea ----
+async function changeStatus(id, estado) {
+  try {
+    await fetch(`${API}/tasks/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ estado }),
+    });
+    // Recargar lista para reflejar el cambio visual
+    await loadTasks();
+  } catch (e) {
+    showMsg('task-error', 'No se pudo actualizar el estado.');
+  }
+}
+
+// ---- Eliminar tarea ----
+async function deleteTask(id) {
+  if (!confirm('¿Eliminar esta tarea?')) return;
+  try {
+    await fetch(`${API}/tasks/${id}`, {
+      method: 'DELETE',
+      credentials: 'include',
+    });
+    await loadTasks();
+  } catch (e) {
+    showMsg('task-error', 'No se pudo eliminar la tarea.');
+  }
 }
 
 // ---- Abrir detalle de tarea (modal) ----

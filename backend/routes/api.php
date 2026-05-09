@@ -44,6 +44,9 @@ if ($uri === '/auth/register' && $method === 'POST') {
 } elseif (preg_match('#^/projects/(\d+)$#', $uri, $m) && $method === 'GET') {
     ProjectController::detail((int) $m[1]);
 
+} elseif (preg_match('#^/projects/(\d+)$#', $uri, $m) && $method === 'PUT') {
+    ProjectController::update((int) $m[1]);
+
 // ========================
 //  RUTAS DE TAREAS
 // ========================
@@ -55,6 +58,12 @@ if ($uri === '/auth/register' && $method === 'POST') {
 
 } elseif (preg_match('#^/tasks/(\d+)$#', $uri, $m) && $method === 'GET') {
     TaskController::detail((int) $m[1]);
+
+} elseif (preg_match('#^/tasks/(\d+)/status$#', $uri, $m) && $method === 'PUT') {
+    TaskController::updateStatus((int) $m[1]);
+
+} elseif (preg_match('#^/tasks/(\d+)$#', $uri, $m) && $method === 'DELETE') {
+    TaskController::delete((int) $m[1]);
 
 } elseif ($uri === '/users' && $method === 'GET') {
     TaskController::users();

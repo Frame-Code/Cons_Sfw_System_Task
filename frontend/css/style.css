@@ -398,6 +398,21 @@ body {
 
 .modal-close:hover { color: #555; }
 
+/* ---- SELECTOR DE ESTADO INLINE ---- */
+.estado-select {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.estado-select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 600px) {
   .container { padding: 0 12px; }

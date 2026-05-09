@@ -27,6 +27,20 @@ class Task {
         return $stmt->fetchAll();
     }
 
+    public static function updateStatus(int $id, string $estado): bool {
+        $db = getDB();
+        $stmt = $db->prepare("UPDATE tasks SET estado = ? WHERE id = ?");
+        $stmt->execute([$estado, $id]);
+        return $stmt->rowCount() > 0;
+    }
+
+    public static function delete(int $id): bool {
+        $db = getDB();
+        $stmt = $db->prepare("DELETE FROM tasks WHERE id = ?");
+        $stmt->execute([$id]);
+        return $stmt->rowCount() > 0;
+    }
+
     public static function findById(int $id): ?array {
         $db = getDB();
         $stmt = $db->prepare("

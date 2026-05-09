@@ -38,6 +38,31 @@ class ProjectController {
         echo json_encode(['projects' => $projects]);
     }
 
+    public static function update(int $id): void {
+        $userId = self::requireAuth();
+        $data   = json_decode(file_get_contents('php://input'), true);
+
+        $nombre      = trim($data['nombre'] ?? '');
+        $descripcion = trim($data['descripcion'] ?? '');
+
+        if (!$nombre) {
+            http_response_code(400);
+            echo json_encode(['error' => 'El nombre es obligatorio.']);
+            return;
+        }
+
+        // Verificar que el proyecto pertenece al usuario
+        $project = Project::findById($id);
+        if (!$project || (int)$project['user_id'] !== $userId) {
+            http_response_code(403);
+            echo json_encode(['error' => 'No tienes permiso para editar este proyecto.']);
+            return;
+        }
+
+        Project::update($id, $nombre, $descripcion);
+        echo json_encode(['message' => 'Proyecto actualizado.']);
+    }
+
     public static function detail(int $id): void {
         self::requireAuth();
         $project = Project::findById($id);
