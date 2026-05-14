@@ -6,20 +6,19 @@ require_once __DIR__ . '/../controllers/TaskController.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
-// Usar PATH_INFO si está disponible (más fiable), si no, recortar REQUEST_URI
+// Usar PATH_INFO si está disponible, si no, recortar REQUEST_URI
 if (!empty($_SERVER['PATH_INFO'])) {
     $uri = $_SERVER['PATH_INFO'];
 } else {
     $uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
-    // Eliminar todo lo que haya antes de index.php (cualquier cantidad de segmentos)
+    // Eliminar todo lo que haya antes de index.php 
     $uri = preg_replace('#^.*/index\.php#', '', $uri);
 }
 
 $uri = rtrim($uri, '/') ?: '/';
 
-// ========================
+
 //  RUTAS DE AUTENTICACIÓN
-// ========================
 if ($uri === '/auth/register' && $method === 'POST') {
     AuthController::register();
 
@@ -32,9 +31,8 @@ if ($uri === '/auth/register' && $method === 'POST') {
 } elseif ($uri === '/auth/me' && $method === 'GET') {
     AuthController::me();
 
-// ========================
+
 //  RUTAS DE PROYECTOS
-// ========================
 } elseif ($uri === '/projects' && $method === 'POST') {
     ProjectController::create();
 
@@ -47,9 +45,9 @@ if ($uri === '/auth/register' && $method === 'POST') {
 } elseif (preg_match('#^/projects/(\d+)$#', $uri, $m) && $method === 'PUT') {
     ProjectController::update((int) $m[1]);
 
-// ========================
+
+
 //  RUTAS DE TAREAS
-// ========================
 } elseif ($uri === '/tasks' && $method === 'POST') {
     TaskController::create();
 
@@ -68,9 +66,9 @@ if ($uri === '/auth/register' && $method === 'POST') {
 } elseif ($uri === '/users' && $method === 'GET') {
     TaskController::users();
 
-// ========================
+
+
 //  RUTA NO ENCONTRADA
-// ========================
 } else {
     http_response_code(404);
     echo json_encode(['error' => 'Ruta no encontrada.']);

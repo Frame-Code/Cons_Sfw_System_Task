@@ -9,6 +9,16 @@ define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
 
 function getDB(): PDO {
+    // Modo TESTING: retorna la instancia SQLite inyectada por el bootstrap de pruebas
+    if (defined('TESTING') && TESTING === true) {
+        if (!isset($GLOBALS['TEST_PDO']) || !($GLOBALS['TEST_PDO'] instanceof PDO)) {
+            throw new \RuntimeException(
+                'TEST_PDO no está inicializado. Asegúrate de que DatabaseTestCase::setUp() se ejecutó.'
+            );
+        }
+        return $GLOBALS['TEST_PDO'];
+    }
+
     static $pdo = null;
 
     if ($pdo === null) {
