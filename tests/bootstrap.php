@@ -9,8 +9,11 @@
 // Activa el modo testing. getDB() retornará $GLOBALS['TEST_PDO'] en lugar de conectar a MySQL.
 define('TESTING', true);
 
-// Carga el Composer (PHPUnit y dependencias)
-require_once __DIR__ . '/../vendor/autoload.php';
+// Carga el autoloader de Composer si existe (instalacion via Composer).
+// Si se usa phpunit.phar directamente, PHPUnit ya esta disponible en el phar.
+if (file_exists(__DIR__ . '/../vendor/autoload.php')) {
+    require_once __DIR__ . '/../vendor/autoload.php';
+}
 
 /**
  * Crea y retorna una instancia PDO con SQLite en memoria e inicializa el esquema.

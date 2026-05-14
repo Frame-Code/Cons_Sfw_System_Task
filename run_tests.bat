@@ -1,80 +1,78 @@
 @echo off
-chcp 65001 >nul 2>&1
-title MTasking — Suite de Pruebas
+setlocal enabledelayedexpansion
+title MTasking - Suite de Pruebas
 
 echo.
-echo         MTasking — Ejecutar Pruebas Unitarias      
+echo  ================================================
+echo   MTasking - Ejecutar Pruebas Unitarias
+echo  ================================================
 echo.
 
-:: ── Verificar que PHP está instalado ─────────────────────────────────────────
+:: -- 1. Verificar PHP --
 php --version >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo  [ERROR] PHP no encontrado en el PATH.
-    echo  Descarga PHP en: https://windows.php.net/download
-    echo  Asegurate de agregar PHP al PATH del sistema.
-    pause
-    exit /b 1
-)
+if !ERRORLEVEL! NEQ 0 goto err_php
 
-echo  [OK] PHP encontrado:
-php -r "echo '        PHP ' . PHP_VERSION . PHP_EOL;"
+for /f "tokens=*" %%v in ('php -r "echo PHP_VERSION;"') do echo  [OK] PHP %%v
 
-:: ── Verificar extensión SQLite ───────────────────────────────────────────────
-php -r "if(!extension_loaded('pdo_sqlite')){echo '[ERROR] Extensión pdo_sqlite no habilitada.';exit(1);}" 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo.
-    echo  Habilita pdo_sqlite en php.ini descomentando:
-    echo    extension=pdo_sqlite
-    pause
-    exit /b 1
-)
-echo  [OK] Extensión pdo_sqlite activa
+:: -- 2. Verificar pdo_sqlite --
+php -r "exit(extension_loaded('pdo_sqlite') ? 0 : 1);" >nul 2>&1
+if !ERRORLEVEL! NEQ 0 goto err_sqlite
+echo  [OK] Extension pdo_sqlite activa
 
-:: ── Instalar/actualizar dependencias con Composer ────────────────────────────
+:: -- 3. Descargar PHPUnit phar si no existe --
+if exist "phpunit.phar" goto phar_ok
+
 echo.
-echo  Instalando dependencias (PHPUnit)...
+echo  Descargando PHPUnit 10 (phar)...
+curl -L https://phar.phpunit.de/phpunit-10.phar -o phpunit.phar
+if !ERRORLEVEL! NEQ 0 goto err_curl
+echo  [OK] PHPUnit descargado
 
-if not exist "vendor\autoload.php" (
-    if not exist "composer.phar" (
-        echo  Descargando Composer...
-        php -r "copy('https://getcomposer.org/installer', 'composer-setup.php');"
-        php composer-setup.php --quiet
-        del composer-setup.php
-    )
-    php composer.phar install --no-interaction --prefer-dist
-) else (
-    echo  [OK] Dependencias ya instaladas (vendor/ existe)
-)
-
-:: ── Verificar que PHPUnit existe ──────────────────────────────────────────────
-if not exist "vendor\bin\phpunit" (
-    echo  [ERROR] PHPUnit no encontrado en vendor/bin/phpunit
-    echo  Ejecuta: php composer.phar install
-    pause
-    exit /b 1
-)
-
+:phar_ok
 echo  [OK] PHPUnit listo
+
+:: -- 4. Ejecutar tests --
 echo.
-echo  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-echo  Ejecutando suite de pruebas...
-echo  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo  ================================================
+echo   Ejecutando suite de pruebas...
+echo  ================================================
 echo.
 
-php vendor\bin\phpunit --colors=always --testdox 2>&1
-
-set EXIT_CODE=%ERRORLEVEL%
+php phpunit.phar --colors=always --testdox
+set RESULT=!ERRORLEVEL!
 
 echo.
-echo  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-if %EXIT_CODE% EQU 0 (
-    echo   RESULTADO: TODOS LOS TESTS PASARON ✓
+echo  ================================================
+if !RESULT! EQU 0 (
+    echo   RESULTADO: TODOS LOS TESTS PASARON
 ) else (
-    echo   RESULTADO: HAY TESTS FALLIDOS ✗  ^(código: %EXIT_CODE%^)
+    echo   RESULTADO: HAY TESTS FALLIDOS ^(codigo: !RESULT!^)
 )
-
-echo  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+echo  ================================================
 echo.
 pause
-exit /b %EXIT_CODE%
+exit /b !RESULT!
+
+:: -- Mensajes de error --
+:err_php
+echo  [ERROR] PHP no encontrado en el PATH.
+echo  Descarga PHP en: https://windows.php.net/download
+echo  Agrega PHP al PATH del sistema.
+goto fin_error
+
+:err_sqlite
+echo  [ERROR] Extension pdo_sqlite no disponible.
+echo  Abre php.ini y descomenta: extension=pdo_sqlite
+goto fin_error
+
+:err_curl
+echo  [ERROR] No se pudo descargar PHPUnit con curl.
+echo  Descarga manualmente phpunit-10.phar desde:
+echo    https://phar.phpunit.de/phpunit-10.phar
+echo  Renambralo a phpunit.phar y colocalo en esta carpeta.
+goto fin_error
+
+:fin_error
+echo.
+pause
+exit /b 1
