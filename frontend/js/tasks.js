@@ -1,6 +1,7 @@
 // MTasking - Lógica de tareas dentro de un proyecto
 
 const API = 'http://localhost:8083/mtasking/backend/index.php';
+let currentOpenTaskId = null; // Guarda el ID de la tarea que está visualizándose
 
 // Obtener ID del proyecto desde la URL
 const params     = new URLSearchParams(window.location.search);
@@ -190,6 +191,8 @@ async function openTask(id) {
     if (!data.task) return;
 
     const t = data.task;
+    currentOpenTaskId = t.id; // Guardamos el ID dinámico
+
     document.getElementById('modal-titulo').textContent      = t.titulo;
     document.getElementById('modal-descripcion').textContent = t.descripcion || '—';
     document.getElementById('modal-responsable').textContent = t.responsable_nombre || 'Sin asignar';
@@ -198,6 +201,10 @@ async function openTask(id) {
 
     const estadoEl = document.getElementById('modal-estado');
     estadoEl.innerHTML = `<span class="badge ${estadoBadge(t.estado)}">${escapeHtml(t.estado)}</span>`;
+
+    // Resetear el textarea de comentarios y cargar los existentes
+    document.getElementById('new-comment-text').value = '';
+    await loadComments(t.id);
 
     document.getElementById('task-modal').classList.add('show');
   } catch (_) {}
@@ -232,4 +239,68 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(String(str)));
   return div.innerHTML;
+}
+
+// ---- Cargar comentarios en el modal ----
+async function loadComments(taskId) {
+  const container = document.getElementById('modal-comments-container');
+  
+  try {
+    const res = await fetch(`${API}/tasks/${taskId}/comments`, { credentials: 'include' });
+    const data = await res.json();
+
+    if (!data.comments || data.comments.length === 0) {
+      container.innerHTML = '<p style="color: #999; font-size: 0.85rem; font-style: italic; text-align: center; padding: 10px 0;">No hay comentarios en esta tarea aún.</p>';
+      return;
+    }
+
+    container.innerHTML = data.comments.map(c => {
+      const fecha = new Date(c.created_at).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+      return `
+        <div style="background: #f9f9f9; border-left: 3px solid #28a745; padding: 6px 10px; margin-bottom: 8px; border-radius: 0 4px 4px 0;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 2px;">
+            <strong style="color: #333;">${escapeHtml(c.autor_nombre)}</strong>
+            <span style="color: #777;">${fecha}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: #444; white-space: pre-wrap;">${escapeHtml(c.contenido)}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    container.innerHTML = '<p style="color: red; font-size: 0.85rem;">Error al cargar comentarios.</p>';
+  }
+}
+
+// ---- Agregar un nuevo comentario ----
+async function addComment() {
+  const textEl = document.getElementById('new-comment-text');
+  const contenido = textEl.value.trim();
+
+  if (!contenido) return;
+
+  if (!currentOpenTaskId) {
+    showMsg('comment-error', 'Error: No se encontró la tarea.');
+    return;
+  }
+
+  try {
+    const res = await fetch(`${API}/tasks/${currentOpenTaskId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ contenido }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      showMsg('comment-error', data.error || 'Error al agregar el comentario.');
+      return;
+    }
+
+    textEl.value = ''; // Limpiar caja
+    await loadComments(currentOpenTaskId); // Recargar flujo de comentarios al instante
+  } catch (e) {
+    showMsg('comment-error', 'No se pudo conectar con el servidor.');
+  }
 }

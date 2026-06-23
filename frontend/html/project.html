@@ -109,6 +109,24 @@
         </div>
       </div>
     </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+    <div class="comments-section">
+      <h4 style="margin-bottom: 12px; color: #333;">Comentarios</h4>
+      
+      <div id="modal-comments-container" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+        <p style="color: #888; font-size: 0.85rem; font-style: italic;">Cargando comentarios...</p>
+      </div>
+      
+      <div class="add-comment-box">
+        <textarea id="new-comment-text" placeholder="Escribe un comentario..." rows="2" style="width:100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: inherit; font-size: 0.9rem;"></textarea>
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+          <button class="btn btn-success btn-sm" onclick="addComment()" style="padding: 4px 12px; font-size: 0.85rem;">Comentar</button>
+        </div>
+        <div id="comment-error" class="alert alert-error" style="margin-top: 8px;"></div>
+      </div>
+    </div>
+
   </div>
 </div>
 
