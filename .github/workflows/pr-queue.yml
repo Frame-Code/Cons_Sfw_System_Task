@@ -1,0 +1,262 @@
+name: PR Queue Manager
+
+# Maneja la cola de PRs en Notion.
+# NO usa Claude ni consume tokens — solo filtra y escribe en Notion via curl.
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, closed]
+  pull_request_review:
+    types: [submitted]
+
+env:
+  OWNER: "Frame-Code"                              # Tu usuario GitHub — PRs tuyos se ignoran
+  NOTION_DB_ID: "e7865a032c1646368929fecc3ed77485" # ID de la DB creada en Notion
+  NOTION_VERSION: "2022-06-28"
+g
+jobs:
+  manage-queue:
+    name: Manage PR Queue
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Obtener datos del PR según el evento ──────────────────────────
+      - name: Extract PR data
+        id: pr
+        run: |
+          # pull_request_review no tiene el mismo contexto que pull_request
+          if [ "${{ github.event_name }}" = "pull_request_review" ]; then
+            echo "number=${{ github.event.pull_request.number }}"        >> $GITHUB_OUTPUT
+            echo "author=${{ github.event.pull_request.user.login }}"   >> $GITHUB_OUTPUT
+            echo "title=${{ github.event.pull_request.title }}"         >> $GITHUB_OUTPUT
+            echo "url=${{ github.event.pull_request.html_url }}"        >> $GITHUB_OUTPUT
+            echo "sha=${{ github.event.pull_request.head.sha }}"        >> $GITHUB_OUTPUT
+            echo "head=${{ github.event.pull_request.head.ref }}"       >> $GITHUB_OUTPUT
+            echo "base=${{ github.event.pull_request.base.ref }}"       >> $GITHUB_OUTPUT
+            echo "state=${{ github.event.pull_request.state }}"         >> $GITHUB_OUTPUT
+            echo "review_state=${{ github.event.review.state }}"        >> $GITHUB_OUTPUT
+          else
+            echo "number=${{ github.event.pull_request.number }}"       >> $GITHUB_OUTPUT
+            echo "author=${{ github.event.pull_request.user.login }}"   >> $GITHUB_OUTPUT
+            echo "title=${{ github.event.pull_request.title }}"         >> $GITHUB_OUTPUT
+            echo "url=${{ github.event.pull_request.html_url }}"        >> $GITHUB_OUTPUT
+            echo "sha=${{ github.event.pull_request.head.sha }}"        >> $GITHUB_OUTPUT
+            echo "head=${{ github.event.pull_request.head.ref }}"       >> $GITHUB_OUTPUT
+            echo "base=${{ github.event.pull_request.base.ref }}"       >> $GITHUB_OUTPUT
+            echo "state=${{ github.event.pull_request.state }}"         >> $GITHUB_OUTPUT
+            echo "review_state="                                         >> $GITHUB_OUTPUT
+          fi
+          echo "repo=${{ github.repository }}"  >> $GITHUB_OUTPUT
+
+      # ── 2. Filtro: ignorar PRs del owner ────────────────────────────────
+      - name: Skip if PR is from owner
+        if: steps.pr.outputs.author == env.OWNER
+        run: |
+          echo "ℹ️ PR de ${{ env.OWNER }} — ignorado."
+          exit 0
+
+      # ── 3. Filtro: si review fue aprobado → marcar skipped ──────────────
+      - name: Check if review approved
+        id: review_check
+        if: steps.pr.outputs.author != env.OWNER && steps.pr.outputs.review_state == 'approved'
+        run: echo "skip_reason=approved" >> $GITHUB_OUTPUT
+
+      # ── 4. Filtro: si PR fue cerrado/mergeado → marcar skipped ──────────
+      - name: Check if PR closed
+        id: closed_check
+        if: steps.pr.outputs.author != env.OWNER && steps.pr.outputs.state == 'closed'
+        run: echo "skip_reason=closed" >> $GITHUB_OUTPUT
+
+      # ── 5. Buscar entry existente en Notion ─────────────────────────────
+      - name: Query Notion for existing entry
+        id: notion_query
+        if: steps.pr.outputs.author != env.OWNER
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "https://api.notion.com/v1/databases/${{ env.NOTION_DB_ID }}/query" \
+            -H "Authorization: Bearer ${{ secrets.NOTION_TOKEN }}" \
+            -H "Notion-Version: ${{ env.NOTION_VERSION }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "filter": {
+                "and": [
+                  {
+                    "property": "Repo",
+                    "rich_text": { "equals": "${{ steps.pr.outputs.repo }}" }
+                  },
+                  {
+                    "property": "PR Number",
+                    "number": { "equals": ${{ steps.pr.outputs.number }} }
+                  }
+                ]
+              }
+            }')
+
+          PAGE_ID=$(echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          results = data.get('results', [])
+          if results:
+              print(results[0]['id'])
+          " 2>/dev/null || echo "")
+
+          LAST_SHA=$(echo "$RESPONSE" | python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          results = data.get('results', [])
+          if results:
+              props = results[0].get('properties', {})
+              sha_prop = props.get('Last Analyzed SHA', {})
+              rich = sha_prop.get('rich_text', [])
+              print(rich[0]['plain_text'] if rich else '')
+          " 2>/dev/null || echo "")
+
+          echo "page_id=$PAGE_ID"   >> $GITHUB_OUTPUT
+          echo "last_sha=$LAST_SHA" >> $GITHUB_OUTPUT
+          echo "found=$([ -n \"$PAGE_ID\" ] && echo true || echo false)" >> $GITHUB_OUTPUT
+
+      # ── 6. Filtro: detectar si el owner ya revisó y no hay commits nuevos ──
+      - name: Check if owner reviewed with no new commits since review
+        id: owner_review_check
+        if: |
+          steps.pr.outputs.author != env.OWNER &&
+          steps.review_check.outputs.skip_reason == '' &&
+          steps.closed_check.outputs.skip_reason == ''
+        run: |
+          # Obtener el timestamp del último review de Frame-Code en este PR
+          REVIEWS=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ steps.pr.outputs.repo }}/pulls/${{ steps.pr.outputs.number }}/reviews")
+
+          LAST_REVIEW_DATE=$(echo "$REVIEWS" | python3 -c "
+          import json, sys
+          reviews = json.load(sys.stdin)
+          mine = [r for r in reviews if r.get('user', {}).get('login') == '${{ env.OWNER }}']
+          if mine:
+              latest = sorted(mine, key=lambda r: r['submitted_at'])[-1]
+              print(latest['submitted_at'])
+          " 2>/dev/null || echo "")
+
+          if [ -z "$LAST_REVIEW_DATE" ]; then
+            # Frame-Code nunca ha revisado este PR → no aplica este filtro
+            echo "reviewed_no_new_commits=false" >> $GITHUB_OUTPUT
+            echo "ℹ️ Sin review de ${{ env.OWNER }} — aplican otros filtros."
+            exit 0
+          fi
+
+          echo "✓ Último review de ${{ env.OWNER }}: $LAST_REVIEW_DATE"
+
+          # Obtener commits del PR y ver si alguno es posterior al review
+          COMMITS=$(curl -s \
+            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            "https://api.github.com/repos/${{ steps.pr.outputs.repo }}/pulls/${{ steps.pr.outputs.number }}/commits")
+
+          NEW_COMMITS=$(echo "$COMMITS" | python3 -c "
+          import json, sys
+          commits = json.load(sys.stdin)
+          review_date = '$LAST_REVIEW_DATE'
+          # Comparar fecha del committer (más confiable que author para pushes)
+          new = [c for c in commits
+                 if c.get('commit', {}).get('committer', {}).get('date', '') > review_date]
+          print(len(new))
+          " 2>/dev/null || echo "0")
+
+          echo "Commits nuevos desde el review: $NEW_COMMITS"
+
+          if [ "$NEW_COMMITS" -eq 0 ]; then
+            echo "reviewed_no_new_commits=true" >> $GITHUB_OUTPUT
+            echo "⏭️ Ya revisado por ${{ env.OWNER }} y sin commits nuevos — ignorado."
+          else
+            echo "reviewed_no_new_commits=false" >> $GITHUB_OUTPUT
+            echo "🆕 Hay $NEW_COMMITS commit(s) nuevos desde el review de ${{ env.OWNER }} — agregar a cola."
+          fi
+
+      # ── 7. Filtro: sin commits nuevos desde el último análisis de Claude ──
+      - name: Skip if no new commits since last analysis
+        if: |
+          steps.pr.outputs.author != env.OWNER &&
+          steps.owner_review_check.outputs.reviewed_no_new_commits != 'true' &&
+          steps.notion_query.outputs.found == 'true' &&
+          steps.notion_query.outputs.last_sha == steps.pr.outputs.sha &&
+          steps.review_check.outputs.skip_reason == '' &&
+          steps.closed_check.outputs.skip_reason == ''
+        run: |
+          echo "ℹ️ SHA sin cambios (${{ steps.pr.outputs.sha }}) — ya analizado por Claude."
+          exit 0
+
+      # ── 8a. Marcar como SKIPPED si fue aprobado, cerrado, o owner revisó sin cambios nuevos ──
+      - name: Mark entry as SKIPPED in Notion
+        if: |
+          steps.pr.outputs.author != env.OWNER &&
+          steps.notion_query.outputs.found == 'true' &&
+          (steps.review_check.outputs.skip_reason != '' || steps.closed_check.outputs.skip_reason != '' || steps.owner_review_check.outputs.reviewed_no_new_commits == 'true')
+        run: |
+          curl -s -X PATCH \
+            "https://api.notion.com/v1/pages/${{ steps.notion_query.outputs.page_id }}" \
+            -H "Authorization: Bearer ${{ secrets.NOTION_TOKEN }}" \
+            -H "Notion-Version: ${{ env.NOTION_VERSION }}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "properties": {
+                "Status": { "select": { "name": "skipped" } }
+              }
+            }'
+          echo "✓ PR #${{ steps.pr.outputs.number }} marcado como skipped."
+
+      # ── 8b. Actualizar entry existente con nuevo SHA ─────────────────────
+      - name: Update existing Notion entry (new commit)
+        if: |
+          steps.pr.outputs.author != env.OWNER &&
+          steps.notion_query.outputs.found == 'true' &&
+          steps.notion_query.outputs.last_sha != steps.pr.outputs.sha &&
+          steps.owner_review_check.outputs.reviewed_no_new_commits != 'true' &&
+          steps.review_check.outputs.skip_reason == '' &&
+          steps.closed_check.outputs.skip_reason == ''
+        run: |
+          TITLE=$(echo '${{ steps.pr.outputs.title }}' | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().strip()))")
+          curl -s -X PATCH \
+            "https://api.notion.com/v1/pages/${{ steps.notion_query.outputs.page_id }}" \
+            -H "Authorization: Bearer ${{ secrets.NOTION_TOKEN }}" \
+            -H "Notion-Version: ${{ env.NOTION_VERSION }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"properties\": {
+                \"PR Title\": { \"title\": [{ \"text\": { \"content\": $TITLE } }] },
+                \"Status\": { \"select\": { \"name\": \"pending\" } },
+                \"Current SHA\": { \"rich_text\": [{ \"text\": { \"content\": \"${{ steps.pr.outputs.sha }}\" } }] }
+              }
+            }"
+          echo "✓ Entry actualizada — nuevo commit ${{ steps.pr.outputs.sha }}"
+
+      # ── 8c. Crear nueva entry en Notion ──────────────────────────────────
+      - name: Create new Notion entry
+        if: |
+          steps.pr.outputs.author != env.OWNER &&
+          steps.notion_query.outputs.found == 'false' &&
+          steps.owner_review_check.outputs.reviewed_no_new_commits != 'true' &&
+          steps.review_check.outputs.skip_reason == '' &&
+          steps.closed_check.outputs.skip_reason == ''
+        run: |
+          TITLE=$(echo '${{ steps.pr.outputs.title }}' | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().strip()))")
+          curl -s -X POST \
+            "https://api.notion.com/v1/pages" \
+            -H "Authorization: Bearer ${{ secrets.NOTION_TOKEN }}" \
+            -H "Notion-Version: ${{ env.NOTION_VERSION }}" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"parent\": { \"database_id\": \"${{ env.NOTION_DB_ID }}\" },
+              \"properties\": {
+                \"PR Title\": { \"title\": [{ \"text\": { \"content\": $TITLE } }] },
+                \"Status\": { \"select\": { \"name\": \"pending\" } },
+                \"Repo\": { \"rich_text\": [{ \"text\": { \"content\": \"${{ steps.pr.outputs.repo }}\" } }] },
+                \"PR Number\": { \"number\": ${{ steps.pr.outputs.number }} },
+                \"Author\": { \"rich_text\": [{ \"text\": { \"content\": \"${{ steps.pr.outputs.author }}\" } }] },
+                \"PR URL\": { \"url\": \"${{ steps.pr.outputs.url }}\" },
+                \"Head Branch\": { \"rich_text\": [{ \"text\": { \"content\": \"${{ steps.pr.outputs.head }}\" } }] },
+                \"Base Branch\": { \"rich_text\": [{ \"text\": { \"content\": \"${{ steps.pr.outputs.base }}\" } }] },
+                \"Current SHA\": { \"rich_text\": [{ \"text\": { \"content\": \"${{ steps.pr.outputs.sha }}\" } }] }
+              }
+            }"
+          echo "✓ PR #${{ steps.pr.outputs.number }} agregado a la cola de Notion."
