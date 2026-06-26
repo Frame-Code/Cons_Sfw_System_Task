@@ -35,3 +35,14 @@ CREATE TABLE IF NOT EXISTS tasks (
     FOREIGN KEY (proyecto_id) REFERENCES projects(id) ON DELETE CASCADE,
     FOREIGN KEY (responsable_id) REFERENCES users(id) ON DELETE SET NULL
 );
+
+-- Tabla de comentarios
+CREATE TABLE IF NOT EXISTS comments (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  contenido TEXT NOT NULL,
+  task_id INT NOT NULL,
+  user_id INT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);

@@ -23,28 +23,38 @@ class CommentController {
      * Crear un nuevo comentario para una tarea
      * POST /backend/index.php (o como manejen la ruta)
      */
-    public static function create(): void {
-        $userId = self::requireAuth();
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        $contenido = trim($data['contenido'] ?? '');
-        // Ahora lo toma de lo que inyectamos en la ruta de la API
-        $taskId    = (int) ($_POST['task_id'] ?? 0); 
-
-        if (!$contenido || !$taskId) {
-            http_response_code(400);
-            echo json_encode(['error' => 'El contenido del comentario es obligatorio.']);
-            return;
-        }
-
-        $id = Comment::create($contenido, $taskId, $userId);
-        
-        http_response_code(201);
-        echo json_encode([
-            'message' => 'Comentario agregado con éxito.', 
-            'id' => $id
-        ]);
+    public function create($taskId) {
+    // Verificar sesión activa
+    if (!isset($_SESSION['user_id'])) {
+        http_response_code(410); 
+        echo json_encode(["error" => "Sesión no iniciada."]);
+        return;
     }
+
+    // Leer el JSON del body completo
+    $json = file_get_contents('php://input');
+    $data = json_decode($json, true);
+
+    $contenido = isset($data['contenido']) ? trim($data['contenido']) : '';
+    $userId = $_SESSION['user_id'];
+
+    if (empty($contenido)) {
+        http_response_code(400);
+        echo json_encode(["error" => "El contenido del comentario no puede estar vacío."]);
+        return;
+    }
+
+    // Pasamos el $taskId directo que viene de la ruta inyectada
+    $idG = Comment::create($contenido, (int)$taskId, $userId);
+
+    if ($idG) {
+        http_response_code(201);
+        echo json_encode(["message" => "Comentario agregado con éxito.", "id" => $idG]);
+    } else {
+        http_response_code(500);
+        echo json_encode(["error" => "No se pudo guardar el comentario. Verifique que la tarea exista."]);
+    }
+}
 
     /**
      * Listar todos los comentarios de una tarea en específico
