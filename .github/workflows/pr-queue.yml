@@ -196,81 +196,80 @@ jobs:
           echo "ℹ️ SHA sin cambios (done en sha:${{ steps.pr.outputs.short_sha }}) — ya analizado."
           exit 0
 
-      # ── 7. Preparar título para Notion ──────────────────────────────────
+      # ── 7. Preparar emoji del título ────────────────────────────────────
       - name: Build Notion page title
         id: title
         if: steps.pr.outputs.author != env.OWNER
         run: |
           EMOJI="⏳"
-          SKIP_REASON="${{ steps.skip_detect.outputs.reason }}"
-          OWNER_BLOCK="${{ steps.owner_review.outputs.block }}"
-          if [ -n "$SKIP_REASON" ] || [ "$OWNER_BLOCK" = "true" ]; then
+          if [ -n "${{ steps.skip_detect.outputs.reason }}" ] || [ "${{ steps.owner_review.outputs.block }}" = "true" ]; then
             EMOJI="⏭️"
           fi
-          RAW_TITLE=$(echo '${{ steps.pr.outputs.title }}' | cut -c1-60)
-          FULL_TITLE="$EMOJI ${{ steps.pr.outputs.repo }} #${{ steps.pr.outputs.number }} — $RAW_TITLE [sha:${{ steps.pr.outputs.short_sha }}]"
-          # Escapar para JSON
-          SAFE_TITLE=$(echo "$FULL_TITLE" | python3 -c "import sys,json; print(json.dumps(sys.stdin.read().strip()))")
-          echo "full=$SAFE_TITLE"   >> $GITHUB_OUTPUT
-          echo "emoji=$EMOJI"       >> $GITHUB_OUTPUT
+          echo "emoji=$EMOJI" >> $GITHUB_OUTPUT
 
       # ── 8a. Actualizar página existente ─────────────────────────────────
       - name: Update existing Notion page
         if: |
           steps.pr.outputs.author != env.OWNER &&
           steps.notion_find.outputs.found == 'true'
+        env:
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+          PR_REPO: ${{ steps.pr.outputs.repo }}
+          PR_NUM: ${{ steps.pr.outputs.number }}
+          PR_SHA: ${{ steps.pr.outputs.short_sha }}
+          PAGE_ID: ${{ steps.notion_find.outputs.page_id }}
+          EMOJI: ${{ steps.title.outputs.emoji }}
         run: |
-          PAGE_BODY=$(cat <<EOF
-          {
-            "properties": {
-              "title": {
-                "title": [{ "text": { "content": ${{ steps.title.outputs.full }} } }]
-              }
-            }
-          }
-          EOF
-          )
+          FULL_TITLE="$EMOJI $PR_REPO #$PR_NUM — ${PR_TITLE:0:60} [sha:$PR_SHA]"
+          BODY=$(jq -n --arg t "$FULL_TITLE" \
+            '{"properties":{"title":{"title":[{"text":{"content":$t}}]}}}')
           curl -s -X PATCH \
-            "https://api.notion.com/v1/pages/${{ steps.notion_find.outputs.page_id }}" \
+            "https://api.notion.com/v1/pages/$PAGE_ID" \
             -H "Authorization: Bearer ${{ secrets.NOTION_TOKEN }}" \
             -H "Notion-Version: ${{ env.NOTION_VERSION }}" \
             -H "Content-Type: application/json" \
-            -d "$PAGE_BODY"
-          echo "✓ Página actualizada: ${{ steps.title.outputs.emoji }} ${{ steps.pr.outputs.repo }} #${{ steps.pr.outputs.number }}"
+            -d "$BODY"
+          echo "✓ Página actualizada: $EMOJI $PR_REPO #$PR_NUM"
 
       # ── 8b. Crear nueva página ───────────────────────────────────────────
       - name: Create new Notion page
         if: |
           steps.pr.outputs.author != env.OWNER &&
           steps.notion_find.outputs.found == 'false'
+        env:
+          PR_TITLE: ${{ steps.pr.outputs.title }}
+          PR_REPO: ${{ steps.pr.outputs.repo }}
+          PR_NUM: ${{ steps.pr.outputs.number }}
+          PR_SHA: ${{ steps.pr.outputs.short_sha }}
+          PR_FULL_SHA: ${{ steps.pr.outputs.sha }}
+          PR_AUTHOR: ${{ steps.pr.outputs.author }}
+          PR_HEAD: ${{ steps.pr.outputs.head }}
+          PR_BASE: ${{ steps.pr.outputs.base }}
+          PR_URL: ${{ steps.pr.outputs.url }}
+          EMOJI: ${{ steps.title.outputs.emoji }}
         run: |
-          BODY=$(python3 -c "
-          import json
-          title = ${{ steps.title.outputs.full }}
-          content = '''**Repo:** ${{ steps.pr.outputs.repo }}
-          **PR:** #${{ steps.pr.outputs.number }}
-          **Autor:** @${{ steps.pr.outputs.author }}
-          **Branch:** \`${{ steps.pr.outputs.head }}\` → \`${{ steps.pr.outputs.base }}\`
-          **SHA:** ${{ steps.pr.outputs.sha }}
-          **URL:** ${{ steps.pr.outputs.url }}'''
-          payload = {
-            'parent': {'page_id': '${{ env.QUEUE_PAGE_ID }}'},
-            'properties': {
-              'title': {'title': [{'text': {'content': title}}]}
-            },
-            'children': [{
-              'object': 'block',
-              'type': 'paragraph',
-              'paragraph': {
-                'rich_text': [{'type': 'text', 'text': {'content': content}}]
-              }
-            }]
-          }
-          print(json.dumps(payload))
-          ")
+          FULL_TITLE="$EMOJI $PR_REPO #$PR_NUM — ${PR_TITLE:0:60} [sha:$PR_SHA]"
+          CONTENT="Repo: $PR_REPO
+PR: #$PR_NUM
+Autor: @$PR_AUTHOR
+Branch: $PR_HEAD → $PR_BASE
+SHA: $PR_FULL_SHA
+URL: $PR_URL"
+          BODY=$(jq -n \
+            --arg parent "${{ env.QUEUE_PAGE_ID }}" \
+            --arg title "$FULL_TITLE" \
+            --arg content "$CONTENT" \
+            '{
+              parent: {page_id: $parent},
+              properties: {title: {title: [{text: {content: $title}}]}},
+              children: [{
+                object: "block", type: "paragraph",
+                paragraph: {rich_text: [{type: "text", text: {content: $content}}]}
+              }]
+            }')
           curl -s -X POST "https://api.notion.com/v1/pages" \
             -H "Authorization: Bearer ${{ secrets.NOTION_TOKEN }}" \
             -H "Notion-Version: ${{ env.NOTION_VERSION }}" \
             -H "Content-Type: application/json" \
             -d "$BODY"
-          echo "✓ Nueva página creada: ${{ steps.title.outputs.emoji }} ${{ steps.pr.outputs.repo }} #${{ steps.pr.outputs.number }}"
+          echo "✓ Nueva página creada: $EMOJI $PR_REPO #$PR_NUM"
