@@ -46,7 +46,7 @@
       <textarea id="task-desc" placeholder="Detalle de la tarea..."></textarea>
     </div>
     <div style="display:flex; gap:16px; flex-wrap:wrap;">
-      <div class="form-group" style="flex:1; min-width:160px;">
+      <div class="form-group" style="flex:1; min-width:140px;">
         <label for="task-estado">Estado</label>
         <select id="task-estado">
           <option value="Pendiente">Pendiente</option>
@@ -54,7 +54,19 @@
           <option value="Terminado">Terminado</option>
         </select>
       </div>
-      <div class="form-group" style="flex:1; min-width:160px;">
+      <div class="form-group" style="flex:1; min-width:140px;">
+        <label for="task-prioridad">Prioridad</label>
+        <select id="task-prioridad">
+          <option value="Alta">Alta</option>
+          <option value="Media" selected>Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1; min-width:140px;">
+        <label for="task-fecha-limite">Fecha límite (opcional)</label>
+        <input type="date" id="task-fecha-limite" />
+      </div>
+      <div class="form-group" style="flex:1; min-width:140px;">
         <label for="task-responsable">Responsable</label>
         <select id="task-responsable">
           <option value="">Sin asignar</option>
@@ -64,9 +76,34 @@
     <button class="btn btn-success" onclick="createTask()">Agregar tarea</button>
   </div>
 
+  <!-- Filtros -->
+  <div class="card" style="padding:14px 20px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="form-group" style="margin:0; flex:1; min-width:130px;">
+        <label style="font-size:0.82rem; color:#555;">Filtrar por estado</label>
+        <select id="filtro-estado" onchange="applyFilters()">
+          <option value="">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En progreso">En progreso</option>
+          <option value="Terminado">Terminado</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0; flex:1; min-width:130px;">
+        <label style="font-size:0.82rem; color:#555;">Filtrar por prioridad</label>
+        <select id="filtro-prioridad" onchange="applyFilters()">
+          <option value="">Todas las prioridades</option>
+          <option value="Alta">Alta</option>
+          <option value="Media">Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="margin-bottom:1px;" onclick="clearFilters()">Limpiar filtros</button>
+    </div>
+  </div>
+
   <!-- Lista de tareas -->
   <div class="card">
-    <h3>Tareas del proyecto</h3>
+    <h3>Tareas del proyecto <span id="tasks-count" style="font-size:0.85rem; color:#888; font-weight:normal;"></span></h3>
     <div id="tasks-container">
       <p class="empty-state">Cargando tareas...</p>
     </div>
@@ -96,12 +133,20 @@
           <p id="modal-estado">—</p>
         </div>
         <div class="detail-field">
+          <label>Prioridad</label>
+          <p id="modal-prioridad">—</p>
+        </div>
+        <div class="detail-field">
           <label>Responsable</label>
           <p id="modal-responsable">—</p>
         </div>
         <div class="detail-field">
           <label>Proyecto</label>
           <p id="modal-proyecto">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Fecha límite</label>
+          <p id="modal-fecha-limite">—</p>
         </div>
         <div class="detail-field">
           <label>Creada</label>

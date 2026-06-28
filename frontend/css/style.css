@@ -319,6 +319,27 @@ body {
 .badge-progreso    { background: #d1ecf1; color: #0c5460; }
 .badge-terminado   { background: #d4edda; color: #155724; }
 
+/* ---- BADGES DE PRIORIDAD ---- */
+.badge-alta   { background: #fdecea; color: #c0392b; }
+.badge-media  { background: #fef3cd; color: #856404; }
+.badge-baja   { background: #d4edda; color: #155724; }
+
+/* ---- TAREA VENCIDA ---- */
+.task-vencida {
+  border-color: #f5c6c2 !important;
+  background: #fffafa;
+}
+
+.task-fecha {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.fecha-vencida {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
 /* ---- DETALLE TAREA ---- */
 .detail-grid {
   display: grid;
