@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../config/database.php';
+
 class Comment {
 
     // ---- Guardar un nuevo comentario en la base de datos ----
@@ -11,17 +13,16 @@ class Comment {
             $stmtCheck = $db->prepare("SELECT id FROM tasks WHERE id = ?");
             $stmtCheck->execute([$taskId]);
             if (!$stmtCheck->fetch()) {
-                return false; // La tarea no existe
+                return false; 
             }
 
-            // 2. Insertar usando un bloque seguro. Quitamos NOW() y dejamos que use la hora por defecto o asignamos CURRENT_TIMESTAMP
+            // 2. Insertar usando un bloque seguro con CURRENT_TIMESTAMP
             $stmt = $db->prepare("INSERT INTO comments (contenido, task_id, user_id, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)");
             $success = $stmt->execute([$contenido, $taskId, $userId]);
 
             return $success ? $db->lastInsertId() : false;
 
         } catch (PDOException $e) {
-            // Captura de errores por si algo sale mal al insertar
             return false;
         }
     }
@@ -39,7 +40,6 @@ class Comment {
         ");
         
         $stmt->execute([$taskId]);
-        // Usamos PDO::FETCH_ASSOC para limpiar el mapeo de relaciones de información extraña
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }
