@@ -171,7 +171,7 @@ function renderTask(t) {
         <div class="task-title">${escapeHtml(t.titulo)}</div>
         <div class="task-meta" style="display:flex; gap:8px; flex-wrap:wrap; margin-top:5px; align-items:center;">
           <span class="badge ${prioridadBadge(t.prioridad)}">${escapeHtml(t.prioridad)}</span>
-          ${t.fecha_limite ? `<span class="task-fecha${vencida ? ' fecha-vencida' : ''}">${vencida ? '⚠️ Vencida: ' : '📅 '}${formatFecha(t.fecha_limite)}</span>` : ''}
+          ${t.fecha_limite ? `<span class="task-fecha${vencida ? ' fecha-vencida' : ''}">${vencida ? ' Tarea Vencida el dia: ' : ''}${formatFecha(t.fecha_limite)}</span>` : ''}
           <span style="color:#888;">👤 ${escapeHtml(responsable)}</span>
         </div>
       </div>

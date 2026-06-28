@@ -2,12 +2,12 @@
 
 // MTasking - Configuración de base de datos
 
-define('DB_HOST', '127.0.0.1');
+define('DB_HOST', 'localhost');
 define('DB_NAME', 'mtasking');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_CHARSET', 'utf8mb4');
-
+    
 function getDB(): PDO {
     // Modo TESTING: retorna la instancia SQLite inyectada por el bootstrap de pruebas
     if (defined('TESTING') && TESTING === true) {
