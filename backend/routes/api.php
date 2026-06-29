@@ -71,9 +71,7 @@ if ($uri === '/auth/register' && $method === 'POST') {
 
 // RUTAS DE COMENTARIOS 
 } elseif (preg_match('#^/tasks/(\d+)/comments$#', $uri, $m) && $method === 'POST') {
-    // Para crear un comentario pasamos el task_id que viene en la URL insertándolo en los datos
-    $_POST['task_id'] = (int) $m[1]; 
-    CommentController::create();
+    CommentController::create((int) $m[1]);
 
 } elseif (preg_match('#^/tasks/(\d+)/comments$#', $uri, $m) && $method === 'GET') {
     // Listar comentarios pasándole el ID de la tarea capturado de la URL
