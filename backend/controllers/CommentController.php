@@ -19,7 +19,7 @@ class CommentController {
    /**
      * Guardar un nuevo comentario enviado desde el frontend
      */
-    public static function create(): void {
+   public static function create(int $taskId): void {
         header('Content-Type: application/json');
         
         if (session_status() === PHP_SESSION_NONE) session_start();
