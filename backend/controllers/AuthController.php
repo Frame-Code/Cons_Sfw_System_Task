@@ -151,13 +151,12 @@ public static function solicitarReset(): void
         $expiraEn  = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
         require_once __DIR__ . '/../models/PasswordReset.php';
+        require_once __DIR__ . '/../services/MailService.php';
         PasswordReset::crear($email, $token, $expiraEn);
 
-        // Enviar email con el enlace
-        $enlace  = "http://localhost:8083/mtasking/frontend/html/reset_password.html?token=$token";
-        $asunto  = "Recuperacion de contraseña - MTasking";
-        $cuerpo  = "Haz clic en el enlace para restablecer tu contraseña:\n\n$enlace\n\nExpira en 1 hora.";
-        mail($email, $asunto, $cuerpo);
+        if (!MailService::enviarResetPassword($email, $token)) {
+            error_log("MTasking: no se pudo enviar el correo de recuperación a $email");
+        }
 
         echo json_encode($respuesta);
 
