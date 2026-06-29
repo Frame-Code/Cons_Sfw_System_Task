@@ -31,6 +31,12 @@ if ($uri === '/auth/register' && $method === 'POST') {
 
 } elseif ($uri === '/auth/me' && $method === 'GET') {
     AuthController::me();
+    
+} elseif ($uri === '/auth/solicitar-reset' && $method === 'POST') {
+    AuthController::solicitarReset();
+
+} elseif ($uri === '/auth/restablecer-password' && $method === 'POST') {
+    AuthController::restablecerPassword();
 
 
 //  RUTAS DE PROYECTOS

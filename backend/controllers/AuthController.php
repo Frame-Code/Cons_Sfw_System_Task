@@ -121,4 +121,92 @@ class AuthController
             echo $e->toJson();
         }
     }
+
+/*Responsable del bloque: De la Vega Sanchez Damian Alejandro*
+Campo: Flujo de Recuperacion de Contraseña*/
+
+// -- Solicitar recuperación de contraseña ------------------------------------
+
+public static function solicitarReset(): void
+{
+    try {
+        $data  = json_decode(file_get_contents('php://input'), true);
+        $email = trim($data['email'] ?? '');
+
+        if (!$email || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            throw new AppException('Email inválido.', 400);
+        }
+
+        // Respuesta generica siempre
+        $respuesta = ['message' => 'Si el email está registrado, recibirá un enlace.'];
+
+        $user = User::findByEmail($email);
+        if (!$user) {
+            echo json_encode($respuesta);
+            return;
+        }
+
+        // Generar token único y expiración de 1 hora
+        $token     = bin2hex(random_bytes(32));
+        $expiraEn  = date('Y-m-d H:i:s', strtotime('+1 hour'));
+
+        require_once __DIR__ . '/../models/PasswordReset.php';
+        PasswordReset::crear($email, $token, $expiraEn);
+
+        // Enviar email con el enlace
+        $enlace  = "http://localhost:8083/mtasking/frontend/html/reset_password.html?token=$token";
+        $asunto  = "Recuperacion de contraseña - MTasking";
+        $cuerpo  = "Haz clic en el enlace para restablecer tu contraseña:\n\n$enlace\n\nExpira en 1 hora.";
+        mail($email, $asunto, $cuerpo);
+
+        echo json_encode($respuesta);
+
+    } catch (AppException $e) {
+        http_response_code($e->getHttpCode());
+        echo $e->toJson();
+    }
+}
+
+
+// -- Restablecer contraseña con token ----------------------------------------
+
+public static function restablecerPassword(): void
+{
+    try {
+        $data     = json_decode(file_get_contents('php://input'), true);
+        $token    = trim($data['token']    ?? '');
+        $password = trim($data['password'] ?? '');
+
+        if (!$token || !$password) {
+            throw new AppException('Datos incompletos.', 400);
+        }
+
+        if (strlen($password) < 6) {
+            throw new AppException('La contraseña debe tener al menos 6 caracteres.', 400);
+        }
+
+        require_once __DIR__ . '/../models/PasswordReset.php';
+        $registro = PasswordReset::buscarToken($token);
+
+        if (!$registro) {
+            throw new AppException('Token inválido o expirado.', 400);
+        }
+
+        // Actualizar contraseña del usuario
+        $hash = password_hash($password, PASSWORD_BCRYPT);
+        $db   = getDB();
+        $db->prepare("UPDATE users SET password = ? WHERE email = ?")
+           ->execute([$hash, $registro['email']]);
+
+        // Eliminar el token usado
+        PasswordReset::eliminarToken($token);
+
+        echo json_encode(['message' => 'Contraseña actualizada correctamente.']);
+
+    } catch (AppException $e) {
+        http_response_code($e->getHttpCode());
+        echo $e->toJson();
+    }
+}
+
 }
