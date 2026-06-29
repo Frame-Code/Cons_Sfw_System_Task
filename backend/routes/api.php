@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../controllers/AuthController.php';
 require_once __DIR__ . '/../controllers/ProjectController.php';
 require_once __DIR__ . '/../controllers/TaskController.php';
+require_once __DIR__ . '/../controllers/CommentController.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 
@@ -65,6 +66,16 @@ if ($uri === '/auth/register' && $method === 'POST') {
 
 } elseif ($uri === '/users' && $method === 'GET') {
     TaskController::users();
+
+
+
+// RUTAS DE COMENTARIOS 
+} elseif (preg_match('#^/tasks/(\d+)/comments$#', $uri, $m) && $method === 'POST') {
+    CommentController::create((int) $m[1]);
+
+} elseif (preg_match('#^/tasks/(\d+)/comments$#', $uri, $m) && $method === 'GET') {
+    // Listar comentarios pasándole el ID de la tarea capturado de la URL
+    CommentController::listByTask((int) $m[1]);
 
 
 

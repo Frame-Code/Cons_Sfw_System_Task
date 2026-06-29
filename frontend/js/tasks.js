@@ -1,6 +1,6 @@
-// MTasking - Lógica de tareas dentro de un proyecto
-
+// MTasking - Lógica de tareas y comentarios de un proyecto
 const API = 'http://localhost:8083/mtasking/backend/index.php';
+let currentOpenTaskId = null; // Guarda el ID de la tarea activa en el modal
 
 // Obtener ID del proyecto desde la URL
 const params    = new URLSearchParams(window.location.search);
@@ -10,7 +10,7 @@ if (!projectId) {
   window.location.href = 'dashboard.html';
 }
 
-// ---- Init ----
+// ---- Inicialización del Sistema ----
 (async function init() {
   try {
     const res  = await fetch(`${API}/auth/me`, { credentials: 'include' });
@@ -51,7 +51,7 @@ async function loadProjectInfo() {
   } catch (_) {}
 }
 
-// ---- Cargar usuarios (para el select de responsable) ----
+// ---- Cargar usuarios ----
 async function loadUsers() {
   try {
     const res  = await fetch(`${API}/users`, { credentials: 'include' });
@@ -187,7 +187,7 @@ function renderTask(t) {
   `;
 }
 
-// ---- Cambiar estado de tarea ----
+// ---- Cambiar estado ----
 async function changeStatus(id, estado) {
   try {
     await fetch(`${API}/tasks/${id}/status`, {
@@ -206,17 +206,14 @@ async function changeStatus(id, estado) {
 async function deleteTask(id) {
   if (!confirm('¿Eliminar esta tarea?')) return;
   try {
-    await fetch(`${API}/tasks/${id}`, {
-      method: 'DELETE',
-      credentials: 'include',
-    });
+    await fetch(`${API}/tasks/${id}`, { method: 'DELETE', credentials: 'include' });
     await loadTasks();
   } catch (e) {
     showMsg('task-error', 'No se pudo eliminar la tarea.');
   }
 }
 
-// ---- Abrir detalle de tarea (modal) ----
+// ---- Abrir modal de detalle ----
 async function openTask(id) {
   try {
     const res  = await fetch(`${API}/tasks/${id}`, { credentials: 'include' });
@@ -224,6 +221,8 @@ async function openTask(id) {
     if (!data.task) return;
 
     const t = data.task;
+    currentOpenTaskId = t.id; 
+
     document.getElementById('modal-titulo').textContent      = t.titulo;
     document.getElementById('modal-descripcion').textContent = t.descripcion || '—';
     document.getElementById('modal-responsable').textContent = t.responsable_nombre || 'Sin asignar';
@@ -235,6 +234,11 @@ async function openTask(id) {
     const estadoEl = document.getElementById('modal-estado');
     estadoEl.innerHTML = `<span class="badge ${estadoBadge(t.estado)}">${escapeHtml(t.estado)}</span>`;
 
+    // Limpiar campo de escritura
+    document.getElementById('new-comment-text').value = '';
+
+    // Cargar los comentarios de la tarea
+    await loadComments(t.id);
     // Prioridad con badge de color
     const prioridadEl = document.getElementById('modal-prioridad');
     prioridadEl.innerHTML = `<span class="badge ${prioridadBadge(t.prioridad)}">${escapeHtml(t.prioridad)}</span>`;
@@ -258,7 +262,6 @@ async function openTask(id) {
 function closeModal() {
   document.getElementById('task-modal').classList.remove('show');
 }
-
 document.getElementById('task-modal').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
@@ -293,7 +296,8 @@ function estadoBadge(estado) {
 }
 
 function showMsg(id, msg, type = 'error') {
-  const el       = document.getElementById(id);
+  const el = document.getElementById(id);
+  if (!el) return;
   el.textContent = msg;
   el.className   = `alert alert-${type} show`;
   setTimeout(() => el.classList.remove('show'), 4000);
@@ -303,4 +307,80 @@ function escapeHtml(str) {
   const div = document.createElement('div');
   div.appendChild(document.createTextNode(String(str)));
   return div.innerHTML;
+}
+
+// ---- Cargar comentarios de una tarea usando el estándar del proyecto ----
+async function loadComments(taskId) {
+  const container = document.getElementById('modal-comments-container');
+  if (!container) return;
+
+  try {
+    // Usamos la misma estructura de peticiones asíncronas de requests.js que dejó el líder
+    const res = await fetch(`${API}/tasks/${taskId}/comments`, { credentials: 'include' });
+    
+    if (!res.ok) {
+      container.innerHTML = '<p style="color: #ff4d4d; font-size: 0.85rem; text-align: center; font-weight: 500;">No se pudieron cargar los comentarios en este momento.</p>';
+      return;
+    }
+
+    const data = await res.json();
+
+    if (!data.comments || data.comments.length === 0) {
+      container.innerHTML = '<p style="color: #999; font-size: 0.85rem; font-style: italic; text-align: center; padding: 15px 0;">No hay comentarios en esta tarea aún.</p>';
+      return;
+    }
+
+    // Renderizar los comentarios de forma limpia
+    container.innerHTML = data.comments.map(c => {
+      const fechaString = c.created_at ? c.created_at.replace(" ", "T") : new Date();
+      const fecha = new Date(fechaString).toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+      return `
+        <div style="background: #f9f9f9; border-left: 3px solid #28a745; padding: 8px 12px; margin-bottom: 8px; border-radius: 0 4px 4px 0; text-align: left;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 4px;">
+            <strong style="color: #333;">${escapeHtml(c.autor_nombre)}</strong>
+            <span style="color: #777;">${fecha}</span>
+          </div>
+          <div style="font-size: 0.85rem; color: #444; white-space: pre-wrap; line-height: 1.4;">${escapeHtml(c.contenido)}</div>
+        </div>
+      `;
+    }).join('');
+  } catch (e) {
+    console.error("Error en loadComments:", e);
+    container.innerHTML = '<p style="color: #ff4d4d; font-size: 0.85rem; text-align: center;">Error de comunicación con el servidor local.</p>';
+  }
+}
+
+// ---- Guardar un nuevo comentario usando el estándar del proyecto ----
+async function addComment() {
+  const textEl = document.getElementById('new-comment-text');
+  const contenido = textEl.value.trim();
+
+  if (!contenido) return;
+
+  if (!currentOpenTaskId) {
+    alert('Error: No se ha detectado ninguna tarea activa.');
+    return;
+  }
+
+  try {
+    // Realizamos el envío POST sincronizado con los parámetros globales del sistema
+    const res = await fetch(`${API}/tasks/${currentOpenTaskId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ contenido }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => ({}));
+      alert(errorData.error || 'El servidor denegó la inserción del comentario.');
+      return;
+    }
+
+    textEl.value = ''; // Limpiamos el cuadro de texto
+    await loadComments(currentOpenTaskId); // Forzamos la recarga automática en el contenedor
+  } catch (e) {
+    console.error("Error en addComment:", e);
+    alert('Error de red: No se pudo enviar el comentario.');
+  }
 }
