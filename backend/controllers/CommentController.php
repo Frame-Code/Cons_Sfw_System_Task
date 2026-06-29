@@ -22,31 +22,12 @@ class CommentController {
     public static function create(): void {
         header('Content-Type: application/json');
         
-        if (session_status() === PHP_SESSION_NONE) {
-            session_start();
-        }
-
-        // 1. Validar que el usuario tenga sesión activa
+        if (session_status() === PHP_SESSION_NONE) session_start();
+    
         if (!isset($_SESSION['user_id'])) {
             http_response_code(401);
             echo json_encode(["error" => "Sesión no iniciada."]);
             return;
-        }
-
-        // 2. Extraer dinámicamente el taskId desde la URL (Ej: /tasks/1/comments)
-        $requestUri = $_SERVER['REQUEST_URI'];
-        $scriptName = $_SERVER['SCRIPT_NAME']; 
-        $path = str_replace($scriptName, '', $requestUri);
-        $path = trim($path, '/');
-        $segments = explode('/', $path);
-
-        // Buscamos el valor numérico que va después de la palabra 'tasks'
-        $taskId = null;
-        foreach ($segments as $key => $segment) {
-            if ($segment === 'tasks' && isset($segments[$key + 1])) {
-                $taskId = (int)$segments[$key + 1];
-                break;
-            }
         }
 
         if (!$taskId) {
