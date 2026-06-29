@@ -24,6 +24,8 @@ class TaskController {
         $estado        = trim($data['estado'] ?? 'Pendiente');
         $proyectoId    = (int) ($data['proyecto_id'] ?? 0);
         $responsableId = !empty($data['responsable_id']) ? (int) $data['responsable_id'] : null;
+        $prioridad     = trim($data['prioridad'] ?? 'Media');
+        $fechaLimite   = !empty($data['fecha_limite']) ? trim($data['fecha_limite']) : null;
 
         if (!$titulo || !$proyectoId) {
             http_response_code(400);
@@ -36,14 +38,35 @@ class TaskController {
             $estado = 'Pendiente';
         }
 
-        $id = Task::create($titulo, $descripcion, $estado, $proyectoId, $responsableId);
+        $prioridadesValidas = ['Alta', 'Media', 'Baja'];
+        if (!in_array($prioridad, $prioridadesValidas)) {
+            $prioridad = 'Media';
+        }
+
+        // Validar formato fecha (YYYY-MM-DD)
+        if ($fechaLimite !== null && !preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaLimite)) {
+            $fechaLimite = null;
+        }
+
+        $id = Task::create($titulo, $descripcion, $estado, $proyectoId, $responsableId, $prioridad, $fechaLimite);
         http_response_code(201);
         echo json_encode(['message' => 'Tarea creada.', 'id' => $id]);
     }
 
     public static function listByProject(int $proyectoId): void {
         self::requireAuth();
-        $tasks = Task::getAllByProject($proyectoId);
+
+        // Filtros opcionales via query string: ?estado=Pendiente&prioridad=Alta
+        $estado    = isset($_GET['estado'])    && $_GET['estado']    !== '' ? trim($_GET['estado'])    : null;
+        $prioridad = isset($_GET['prioridad']) && $_GET['prioridad'] !== '' ? trim($_GET['prioridad']) : null;
+
+        // validar valores para evitar inyecciones via query params
+        $estadosValidos    = ['Pendiente', 'En progreso', 'Terminado'];
+        $prioridadesValidas = ['Alta', 'Media', 'Baja'];
+        if ($estado    !== null && !in_array($estado, $estadosValidos))      $estado    = null;
+        if ($prioridad !== null && !in_array($prioridad, $prioridadesValidas)) $prioridad = null;
+
+        $tasks = Task::getAllByProject($proyectoId, $estado, $prioridad);
         echo json_encode(['tasks' => $tasks]);
     }
 

@@ -53,11 +53,42 @@ function createTestDatabase(): PDO
             titulo         TEXT    NOT NULL,
             descripcion    TEXT,
             estado         TEXT    NOT NULL DEFAULT 'Pendiente',
+            prioridad      TEXT    NOT NULL DEFAULT 'Media',
+            fecha_limite   TEXT    DEFAULT NULL,
             proyecto_id    INTEGER NOT NULL,
             responsable_id INTEGER,
             created_at     TEXT    DEFAULT (datetime('now')),
             FOREIGN KEY (proyecto_id)    REFERENCES projects(id) ON DELETE CASCADE,
             FOREIGN KEY (responsable_id) REFERENCES users(id)    ON DELETE SET NULL
+        );
+
+        CREATE TABLE IF NOT EXISTS comments (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            contenido TEXT NOT NULL,
+            task_id INT NOT NULL,
+            user_id INT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS task_history (
+            id              INTEGER PRIMARY KEY AUTOINCREMENT,
+            task_id         INTEGER NOT NULL,
+            user_id         INTEGER NOT NULL,
+            estado_anterior TEXT,
+            estado_nuevo    TEXT    NOT NULL,
+            created_at      TEXT    DEFAULT (datetime('now')),
+            FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
+            FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+        );
+
+        CREATE TABLE IF NOT EXISTS password_resets (
+            id         INTEGER PRIMARY KEY AUTOINCREMENT,
+            email      TEXT    NOT NULL,
+            token      TEXT    NOT NULL UNIQUE,
+            expires_at TEXT    NOT NULL,
+            created_at TEXT    DEFAULT (datetime('now'))
         );
     ");
 
