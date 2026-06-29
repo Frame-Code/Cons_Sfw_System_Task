@@ -1,34 +1,13 @@
 <?php
-
-require_once __DIR__ . '/../config/database.php';
+// Cambiamos la ruta para que apunte al archivo correcto de configuración
+require_once dirname(__DIR__) . '/config/Database.php';
 
 class Comment {
-
-    // ---- Guardar un nuevo comentario en la base de datos ----
-    public static function create(string $contenido, int $taskId, int $userId) {
-        $db = getDB();
-
-        try {
-            // 1. Validar antes de hacer el insert que el taskId exista
-            $stmtCheck = $db->prepare("SELECT id FROM tasks WHERE id = ?");
-            $stmtCheck->execute([$taskId]);
-            if (!$stmtCheck->fetch()) {
-                return false; 
-            }
-
-            // 2. Insertar usando un bloque seguro con CURRENT_TIMESTAMP
-            $stmt = $db->prepare("INSERT INTO comments (contenido, task_id, user_id, created_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)");
-            $success = $stmt->execute([$contenido, $taskId, $userId]);
-
-            return $success ? $db->lastInsertId() : false;
-
-        } catch (PDOException $e) {
-            return false;
-        }
-    }
-
-    // ---- Obtener comentarios de una tarea ----
-    public static function getByTaskId(int $taskId) {
+    /**
+     * Obtener todos los comentarios de una tarea con el nombre del autor
+     */
+    public static function getByTaskId($taskId) {
+        // CORREGIDO: Usamos la función de tu líder getDB() en lugar de la clase inexistente
         $db = getDB();
         
         $stmt = $db->prepare("
@@ -38,8 +17,22 @@ class Comment {
             WHERE c.task_id = ?
             ORDER BY c.created_at DESC
         ");
-        
-        $stmt->execute([$taskId]);
+        $stmt->execute([(int)$taskId]);
         return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Insertar un nuevo comentario en la base de datos
+     */
+    public static function create($contenido, $taskId, $userId) {
+        // CORREGIDO: Usamos la función de tu líder getDB() en lugar de la clase inexistente
+        $db = getDB();
+        
+        $stmt = $db->prepare("
+            INSERT INTO comments (contenido, task_id, user_id, created_at) 
+            VALUES (?, ?, ?, NOW())
+        ");
+        $success = $stmt->execute([$contenido, (int)$taskId, (int)$userId]);
+        return $success ? $db->lastInsertId() : false;
     }
 }
