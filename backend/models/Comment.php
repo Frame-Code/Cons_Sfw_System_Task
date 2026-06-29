@@ -1,6 +1,6 @@
 <?php
 // Cambiamos la ruta para que apunte al archivo correcto de configuración
-require_once dirname(__DIR__) . '/config/Database.php';
+require_once dirname(__DIR__) . '/config/database.php';
 
 class Comment {
     /**
@@ -30,7 +30,7 @@ class Comment {
         
         $stmt = $db->prepare("
             INSERT INTO comments (contenido, task_id, user_id, created_at) 
-            VALUES (?, ?, ?, NOW())
+            VALUES (?, ?, ?, CURRENT_TIMESTAMP)
         ");
         $success = $stmt->execute([$contenido, (int)$taskId, (int)$userId]);
         return $success ? $db->lastInsertId() : false;
