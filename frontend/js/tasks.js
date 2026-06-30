@@ -134,16 +134,37 @@ async function loadTasks() {
   try {
     const res  = await fetch(url, { credentials: 'include' });
     const data = await res.json();
+    const tasks = data.tasks || [];
 
-    if (!data.tasks || data.tasks.length === 0) {
+    // ======================================================================
+    // CÁLCULO E INYECCIÓN DE MÉTRICAS EN TIEMPO REAL
+    // ======================================================================
+    const total = tasks.length;
+    const pendientes = tasks.filter(t => t.estado === 'Pendiente').length;
+    const enProgreso = tasks.filter(t => t.estado === 'En progreso').length;
+    const terminadas = tasks.filter(t => t.estado === 'Terminado').length;
+    const porcentaje = total > 0 ? Math.round((terminadas / total) * 100) : 0;
+
+    if (document.getElementById('metric-total')) document.getElementById('metric-total').textContent = total;
+    if (document.getElementById('metric-pendientes')) document.getElementById('metric-pendientes').textContent = pendientes;
+    if (document.getElementById('metric-progreso')) document.getElementById('metric-progreso').textContent = enProgreso;
+    if (document.getElementById('metric-porcentaje')) document.getElementById('metric-porcentaje').textContent = `${porcentaje}%`;
+    
+    // Y actualizamos también la barra de progreso visual
+    if (document.getElementById('metric-progress-bar')) {
+        document.getElementById('metric-progress-bar').style.width = `${porcentaje}%`;
+    }
+    // ======================================================================
+
+    if (tasks.length === 0) {
       const hayFiltros = estado || prioridad;
       container.innerHTML = `<p class="empty-state">${hayFiltros ? 'No hay tareas que coincidan con los filtros.' : 'Este proyecto no tiene tareas aún.'}</p>`;
       if (countEl) countEl.textContent = '';
       return;
     }
 
-    if (countEl) countEl.textContent = `(${data.tasks.length})`;
-    container.innerHTML = `<div class="task-list">${data.tasks.map(renderTask).join('')}</div>`;
+    if (countEl) countEl.textContent = `(${tasks.length})`;
+    container.innerHTML = `<div class="task-list">${tasks.map(renderTask).join('')}</div>`;
   } catch (e) {
     container.innerHTML = '<p class="empty-state">Error al cargar las tareas.</p>';
   }

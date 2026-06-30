@@ -4,7 +4,6 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>MTasking - Proyecto</title>
-  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
   <link rel="stylesheet" href="../css/style.css" />
 </head>
 <body>
@@ -76,7 +75,30 @@
     </div>
     <button class="btn btn-success" onclick="createTask()">Agregar tarea</button>
   </div>
-
+  <div id="metrics-section" style="margin-bottom: 20px;">
+      <div style="display: flex; gap: 15px; margin-bottom: 15px; text-align: center;">
+          <div style="flex: 1; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #ddd;">
+              <h5 style="margin: 0; color: #6c757d; font-size: 14px;">Total Tareas</h5>
+              <h2 style="margin: 5px 0 0; color: #343a40;" id="metric-total">0</h2>
+          </div>
+          <div style="flex: 1; padding: 15px; background: #fff3cd; border-radius: 8px; border: 1px solid #ffe69c;">
+              <h5 style="margin: 0; color: #856404; font-size: 14px;">Pendientes</h5>
+              <h2 style="margin: 5px 0 0; color: #856404;" id="metric-pendientes">0</h2>
+          </div>
+          <div style="flex: 1; padding: 15px; background: #cce5ff; border-radius: 8px; border: 1px solid #b8daff;">
+              <h5 style="margin: 0; color: #004085; font-size: 14px;">En Progreso</h5>
+              <h2 style="margin: 5px 0 0; color: #004085;" id="metric-progreso">0</h2>
+          </div>
+          <div style="flex: 1; padding: 15px; background: #d4edda; border-radius: 8px; border: 1px solid #c3e6cb;">
+              <h5 style="margin: 0; color: #155724; font-size: 14px;">Completado</h5>
+              <h2 style="margin: 5px 0 0; color: #155724;" id="metric-porcentaje">0%</h2>
+          </div>
+      </div>
+      
+      <div style="width: 100%; background-color: #e9ecef; border-radius: 5px; height: 12px; overflow: hidden;">
+          <div id="metric-progress-bar" style="width: 0%; background-color: #28a745; height: 100%; transition: width 0.4s ease;"></div>
+      </div>
+  </div>
   <!-- Filtros -->
   <div class="card" style="padding:14px 20px;">
     <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
