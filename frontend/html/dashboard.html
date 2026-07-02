@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTasking - Proyectos</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <span class="brand">MTasking</span>
+  <div class="nav-user">
+    <span id="nav-username">Cargando...</span>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</nav>
+
+<!-- Contenido -->
+<div class="container">
+
+  <!-- Crear proyecto -->
+  <div class="card">
+    <h2>Nuevo proyecto</h2>
+    <div class="alert alert-error" id="project-error"></div>
+    <div class="alert alert-success" id="project-success"></div>
+    <div class="form-group">
+      <label for="proj-nombre">Nombre del proyecto</label>
+      <input type="text" id="proj-nombre" placeholder="Ej: Sistema de inventario" />
+    </div>
+    <div class="form-group">
+      <label for="proj-desc">Descripción (opcional)</label>
+      <textarea id="proj-desc" placeholder="¿De qué se trata este proyecto?"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="createProject()">Crear proyecto</button>
+  </div>
+
+  <!-- Lista de proyectos -->
+  <div class="card">
+    <h2>Mis proyectos</h2>
+    <div id="projects-container">
+      <p class="empty-state">Cargando proyectos...</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal editar proyecto -->
+<div class="modal-overlay" id="edit-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Editar proyecto</h3>
+      <button class="modal-close" onclick="closeEditModal()">&#215;</button>
+    </div>
+    <input type="hidden" id="edit-id" />
+    <div class="form-group">
+      <label for="edit-nombre">Nombre</label>
+      <input type="text" id="edit-nombre" />
+    </div>
+    <div class="form-group">
+      <label for="edit-desc">Descripción</label>
+      <textarea id="edit-desc"></textarea>
+    </div>
+    <button class="btn btn-primary" onclick="saveProject()">Guardar cambios</button>
+  </div>
+</div>
+
+<script src="../js/projects.js"></script>
+</body>
+</html>

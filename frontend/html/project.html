@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTasking - Proyecto</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <span class="brand">MTasking</span>
+  <div class="nav-user">
+    <span id="nav-username">Cargando...</span>
+    <button class="btn-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</nav>
+
+<!-- Contenido -->
+<div class="container">
+
+  <!-- Breadcrumb -->
+  <div class="breadcrumb">
+    <a href="dashboard.html">Mis proyectos</a> &rsaquo; <span id="project-title">...</span>
+  </div>
+
+  <!-- Info del proyecto -->
+  <div class="card" id="project-info">
+    <h2 id="proj-name">Cargando proyecto...</h2>
+    <p id="proj-desc" style="color:#888; font-size:0.93rem; margin-top:4px;"></p>
+  </div>
+
+  <!-- Crear tarea -->
+  <div class="card">
+    <h3>Nueva tarea</h3>
+    <div class="alert alert-error" id="task-error"></div>
+    <div class="alert alert-success" id="task-success"></div>
+
+    <div class="form-group">
+      <label for="task-titulo">Título</label>
+      <input type="text" id="task-titulo" placeholder="Ej: Diseñar base de datos" />
+    </div>
+    <div class="form-group">
+      <label for="task-desc">Descripción (opcional)</label>
+      <textarea id="task-desc" placeholder="Detalle de la tarea..."></textarea>
+    </div>
+    <div style="display:flex; gap:16px; flex-wrap:wrap;">
+      <div class="form-group" style="flex:1; min-width:140px;">
+        <label for="task-estado">Estado</label>
+        <select id="task-estado">
+          <option value="Pendiente">Pendiente</option>
+          <option value="En progreso">En progreso</option>
+          <option value="Terminado">Terminado</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1; min-width:140px;">
+        <label for="task-prioridad">Prioridad</label>
+        <select id="task-prioridad">
+          <option value="Alta">Alta</option>
+          <option value="Media" selected>Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1; min-width:140px;">
+        <label for="task-fecha-limite">Fecha límite (opcional)</label>
+        <input type="date" id="task-fecha-limite" />
+      </div>
+      <div class="form-group" style="flex:1; min-width:140px;">
+        <label for="task-responsable">Responsable</label>
+        <select id="task-responsable">
+          <option value="">Sin asignar</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn btn-success" onclick="createTask()">Agregar tarea</button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="card" style="padding:14px 20px;">
+    <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end;">
+      <div class="form-group" style="margin:0; flex:1; min-width:130px;">
+        <label style="font-size:0.82rem; color:#555;">Filtrar por estado</label>
+        <select id="filtro-estado" onchange="applyFilters()">
+          <option value="">Todos los estados</option>
+          <option value="Pendiente">Pendiente</option>
+          <option value="En progreso">En progreso</option>
+          <option value="Terminado">Terminado</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin:0; flex:1; min-width:130px;">
+        <label style="font-size:0.82rem; color:#555;">Filtrar por prioridad</label>
+        <select id="filtro-prioridad" onchange="applyFilters()">
+          <option value="">Todas las prioridades</option>
+          <option value="Alta">Alta</option>
+          <option value="Media">Media</option>
+          <option value="Baja">Baja</option>
+        </select>
+      </div>
+      <button class="btn btn-secondary btn-sm" style="margin-bottom:1px;" onclick="clearFilters()">Limpiar filtros</button>
+    </div>
+  </div>
+
+  <!-- Lista de tareas -->
+  <div class="card">
+    <h3>Tareas del proyecto <span id="tasks-count" style="font-size:0.85rem; color:#888; font-weight:normal;"></span></h3>
+    <div id="tasks-container">
+      <p class="empty-state">Cargando tareas...</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal detalle de tarea -->
+<div class="modal-overlay" id="task-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3>Detalle de tarea</h3>
+      <button class="modal-close" onclick="closeModal()">&#215;</button>
+    </div>
+    <div id="modal-content">
+      <div class="detail-grid">
+        <div class="detail-field" style="grid-column: 1 / -1;">
+          <label>Título</label>
+          <p id="modal-titulo">—</p>
+        </div>
+        <div class="detail-field" style="grid-column: 1 / -1;">
+          <label>Descripción</label>
+          <p id="modal-descripcion">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Estado</label>
+          <p id="modal-estado">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Prioridad</label>
+          <p id="modal-prioridad">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Responsable</label>
+          <p id="modal-responsable">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Proyecto</label>
+          <p id="modal-proyecto">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Fecha límite</label>
+          <p id="modal-fecha-limite">—</p>
+        </div>
+        <div class="detail-field">
+          <label>Creada</label>
+          <p id="modal-fecha">—</p>
+        </div>
+      </div>
+    </div>
+
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 20px 0;" />
+    <div class="comments-section">
+      <h4 style="margin-bottom: 12px; color: #333;">Comentarios</h4>
+      
+      <div id="modal-comments-container" style="max-height: 180px; overflow-y: auto; margin-bottom: 15px; padding-right: 5px;">
+        <p style="color: #888; font-size: 0.85rem; font-style: italic;">Cargando comentarios...</p>
+      </div>
+      
+      <div class="add-comment-box">
+        <textarea id="new-comment-text" placeholder="Escribe un comentario..." rows="2" style="width:100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; resize: none; font-family: inherit; font-size: 0.9rem;"></textarea>
+        <div style="display: flex; justify-content: flex-end; margin-top: 6px;">
+          <button class="btn btn-success btn-sm" onclick="addComment()" style="padding: 4px 12px; font-size: 0.85rem;">Comentar</button>
+        </div>
+        <div id="comment-error" class="alert alert-error" style="margin-top: 8px;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="../js/tasks.js"></script>
+</body>
+</html>

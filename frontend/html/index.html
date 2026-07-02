@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MTasking - Iniciar sesión</title>
+  <link rel="icon" type="image/svg+xml" href="../assets/favicon.svg" />
+  <link rel="stylesheet" href="../css/style.css" />
+</head>
+<body>
+
+<div class="auth-wrapper">
+  <div class="auth-card">
+
+    <div class="logo">
+      <h1>MTasking</h1>
+      <p>Gestor de tareas colaborativo</p>
+    </div>
+
+    <!-- Tabs -->
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tab-login" onclick="switchTab('login')">Iniciar sesión</div>
+      <div class="auth-tab" id="tab-register" onclick="switchTab('register')">Registrarse</div>
+    </div>
+
+    <!-- Formulario Login -->
+    <div class="auth-form active" id="form-login">
+      <div class="alert alert-error" id="login-error"></div>
+      <div class="alert alert-success" id="login-success"></div>
+
+      <div class="form-group">
+        <label for="login-email">Email</label>
+        <input type="email" id="login-email" placeholder="tu@email.com" />
+      </div>
+      <div class="form-group">
+        <label for="login-password">Contraseña</label>
+        <input type="password" id="login-password" placeholder="••••••" />
+      </div>
+      <button class="btn btn-primary" style="width:100%;" onclick="login()">Entrar</button>
+      <div style="text-align:center; margin-top:12px; font-size:0.85rem;">
+        <a href="forgot_password.html" style="color:#3498db;">¿Olvidaste tu contraseña?</a>
+      </div>
+    </div>
+    
+
+    <!-- Formulario Registro -->
+    <div class="auth-form" id="form-register">
+      <div class="alert alert-error" id="register-error"></div>
+      <div class="alert alert-success" id="register-success"></div>
+
+      <div class="form-group">
+        <label for="reg-nombre">Nombre completo</label>
+        <input type="text" id="reg-nombre" placeholder="Juan Pérez" />
+      </div>
+      <div class="form-group">
+        <label for="reg-email">Email</label>
+        <input type="email" id="reg-email" placeholder="tu@email.com" />
+      </div>
+      <div class="form-group">
+        <label for="reg-password">Contraseña</label>
+        <input type="password" id="reg-password" placeholder="Mínimo 6 caracteres" />
+      </div>
+      <button class="btn btn-success" style="width:100%;" onclick="register()">Crear cuenta</button>
+    </div>
+
+  </div>
+</div>
+
+<script src="../js/auth.js"></script>
+</body>
+</html>

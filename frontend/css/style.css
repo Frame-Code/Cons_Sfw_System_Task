@@ -1,0 +1,442 @@
+/* MTasking - Estilos globales */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background: #f0f2f5;
+  color: #333;
+  min-height: 100vh;
+}
+
+/* ---- NAVBAR ---- */
+.navbar {
+  background: #2c3e50;
+  color: #fff;
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar .brand {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+
+.navbar .nav-user {
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.navbar .nav-user span {
+  opacity: 0.85;
+}
+
+.btn-logout {
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.5);
+  color: #fff;
+  padding: 4px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.2s;
+}
+
+.btn-logout:hover {
+  background: rgba(255,255,255,0.15);
+}
+
+/* ---- CONTENEDOR ---- */
+.container {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 20px;
+}
+
+/* ---- TARJETAS ---- */
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 32px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  margin-bottom: 24px;
+}
+
+.card h2 {
+  margin-bottom: 24px;
+  font-size: 1.4rem;
+  color: #2c3e50;
+}
+
+.card h3 {
+  margin-bottom: 16px;
+  font-size: 1.1rem;
+  color: #34495e;
+}
+
+/* ---- FORMULARIOS ---- */
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.88rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #555;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  background: #fafafa;
+  transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+  background: #fff;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ---- BOTONES ---- */
+.btn {
+  display: inline-block;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btn:hover { opacity: 0.88; }
+.btn:active { transform: scale(0.98); }
+
+.btn-primary   { background: #3498db; color: #fff; }
+.btn-success   { background: #2ecc71; color: #fff; }
+.btn-secondary { background: #95a5a6; color: #fff; }
+.btn-danger    { background: #e74c3c; color: #fff; }
+.btn-sm { padding: 6px 14px; font-size: 0.82rem; }
+
+/* ---- AUTH PAGE ---- */
+.auth-wrapper {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #2c3e50;
+}
+
+.auth-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 40px 36px;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+
+.auth-card .logo {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.auth-card .logo h1 {
+  font-size: 2rem;
+  color: #2c3e50;
+  font-weight: 800;
+}
+
+.auth-card .logo p {
+  color: #888;
+  font-size: 0.88rem;
+  margin-top: 4px;
+}
+
+.auth-tabs {
+  display: flex;
+  margin-bottom: 24px;
+  border-bottom: 2px solid #eee;
+}
+
+.auth-tab {
+  flex: 1;
+  padding: 10px;
+  text-align: center;
+  font-weight: 600;
+  cursor: pointer;
+  color: #999;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.2s;
+}
+
+.auth-tab.active {
+  color: #3498db;
+  border-bottom-color: #3498db;
+}
+
+.auth-form { display: none; }
+.auth-form.active { display: block; }
+
+.auth-link {
+  text-align: center;
+  font-size: 0.85rem;
+  color: #888;
+  margin-top: 16px;
+}
+
+/* ---- ALERTA ---- */
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.88rem;
+  margin-bottom: 16px;
+  display: none;
+}
+
+.alert.show { display: block; }
+.alert-error   { background: #fdecea; color: #c0392b; border: 1px solid #f5c6c2; }
+.alert-success { background: #eafaf1; color: #27ae60; border: 1px solid #b8edcc; }
+
+/* ---- LISTA DE PROYECTOS ---- */
+.project-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.project-item {
+  background: #fff;
+  border: 1px solid #e5e8ec;
+  border-radius: 8px;
+  padding: 20px;
+  cursor: pointer;
+  transition: box-shadow 0.2s, transform 0.15s;
+}
+
+.project-item:hover {
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.project-item h4 {
+  font-size: 1rem;
+  color: #2c3e50;
+  margin-bottom: 6px;
+}
+
+.project-item p {
+  font-size: 0.83rem;
+  color: #888;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.project-item .project-date {
+  font-size: 0.78rem;
+  color: #bbb;
+  margin-top: 10px;
+}
+
+.empty-state {
+  text-align: center;
+  color: #aaa;
+  padding: 40px 0;
+  font-size: 0.95rem;
+}
+
+/* ---- LISTA DE TAREAS ---- */
+.task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.task-item {
+  border: 1px solid #e5e8ec;
+  border-radius: 8px;
+  padding: 14px 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: box-shadow 0.2s;
+}
+
+.task-item:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.08); }
+
+.task-item .task-title {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.task-item .task-meta {
+  font-size: 0.8rem;
+  color: #999;
+  margin-top: 3px;
+}
+
+/* ---- BADGES DE ESTADO ---- */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-pendiente   { background: #fef3cd; color: #856404; }
+.badge-progreso    { background: #d1ecf1; color: #0c5460; }
+.badge-terminado   { background: #d4edda; color: #155724; }
+
+/* ---- BADGES DE PRIORIDAD ---- */
+.badge-alta   { background: #fdecea; color: #c0392b; }
+.badge-media  { background: #fef3cd; color: #856404; }
+.badge-baja   { background: #d4edda; color: #155724; }
+
+/* ---- TAREA VENCIDA ---- */
+.task-vencida {
+  border-color: #f5c6c2 !important;
+  background: #fffafa;
+}
+
+.task-fecha {
+  font-size: 0.78rem;
+  color: #888;
+}
+
+.fecha-vencida {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* ---- DETALLE TAREA ---- */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.detail-field label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.detail-field p {
+  font-size: 0.95rem;
+  color: #2c3e50;
+}
+
+/* ---- BREADCRUMB ---- */
+.breadcrumb {
+  font-size: 0.85rem;
+  color: #999;
+  margin-bottom: 20px;
+}
+
+.breadcrumb a {
+  color: #3498db;
+  text-decoration: none;
+}
+
+.breadcrumb a:hover { text-decoration: underline; }
+
+/* ---- MODAL ---- */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  display: none;
+}
+
+.modal-overlay.show { display: flex; }
+
+.modal {
+  background: #fff;
+  border-radius: 10px;
+  padding: 32px;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modal-header h3 { font-size: 1.2rem; color: #2c3e50; }
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  cursor: pointer;
+  color: #aaa;
+  line-height: 1;
+}
+
+.modal-close:hover { color: #555; }
+
+/* ---- SELECTOR DE ESTADO INLINE ---- */
+.estado-select {
+  padding: 4px 8px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  background: #fafafa;
+  cursor: pointer;
+}
+
+.estado-select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+/* ---- RESPONSIVE ---- */
+@media (max-width: 600px) {
+  .container { padding: 0 12px; }
+  .auth-card  { padding: 28px 20px; }
+  .detail-grid { grid-template-columns: 1fr; }
+}
