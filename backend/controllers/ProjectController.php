@@ -1,78 +1,164 @@
 <?php
 
 require_once __DIR__ . '/../models/Project.php';
+require_once __DIR__ . '/../exceptions/AppException.php';
 
-class ProjectController {
+class ProjectController
+{
 
-    private static function requireAuth(): int {
+    private static function requireAuth(): int
+    {
         session_start();
+
         if (empty($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'No autenticado.']);
-            exit;
+            throw new AuthException(
+                'Debes iniciar sesión para acceder a este recurso.'
+            );
         }
+
         return (int) $_SESSION['user_id'];
     }
 
-    public static function create(): void {
-        $userId = self::requireAuth();
-        $data = json_decode(file_get_contents('php://input'), true);
+    public static function create(): void
+    {
+        try {
 
-        $nombre      = trim($data['nombre'] ?? '');
-        $descripcion = trim($data['descripcion'] ?? '');
+            $userId = self::requireAuth();
 
-        if (!$nombre) {
-            http_response_code(400);
-            echo json_encode(['error' => 'El nombre del proyecto es obligatorio.']);
-            return;
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            $nombre = trim($data['nombre'] ?? '');
+            $descripcion = trim($data['descripcion'] ?? '');
+
+            if (!$nombre) {
+                throw new AppException(
+                    'El nombre del proyecto es obligatorio.',
+                    400
+                );
+            }
+
+            $id = Project::create(
+                $nombre,
+                $descripcion,
+                $userId
+            );
+
+            http_response_code(201);
+
+            echo json_encode([
+                'message' => 'Proyecto creado.',
+                'id' => $id
+            ]);
+
+        } catch (AppException $e) {
+
+            http_response_code($e->getHttpCode());
+
+            echo $e->toJson();
+
         }
-
-        $id = Project::create($nombre, $descripcion, $userId);
-        http_response_code(201);
-        echo json_encode(['message' => 'Proyecto creado.', 'id' => $id]);
     }
 
-    public static function list(): void {
-        $userId = self::requireAuth();
-        $projects = Project::getAllByUser($userId);
-        echo json_encode(['projects' => $projects]);
+    public static function list(): void
+    {
+        try {
+
+            $userId = self::requireAuth();
+
+            $projects = Project::getAllByUser($userId);
+
+            echo json_encode([
+                'projects' => $projects
+            ]);
+
+        } catch (AppException $e) {
+
+            http_response_code($e->getHttpCode());
+
+            echo $e->toJson();
+
+        }
     }
 
-    public static function update(int $id): void {
-        $userId = self::requireAuth();
-        $data   = json_decode(file_get_contents('php://input'), true);
+    public static function update(int $id): void
+    {
+        try {
 
-        $nombre      = trim($data['nombre'] ?? '');
-        $descripcion = trim($data['descripcion'] ?? '');
+            $userId = self::requireAuth();
 
-        if (!$nombre) {
-            http_response_code(400);
-            echo json_encode(['error' => 'El nombre es obligatorio.']);
-            return;
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            $nombre = trim($data['nombre'] ?? '');
+            $descripcion = trim($data['descripcion'] ?? '');
+
+            if (!$nombre) {
+                throw new AppException(
+                    'El nombre es obligatorio.',
+                    400
+                );
+            }
+
+            $project = Project::findById($id);
+
+            if (!$project) {
+                throw new RecursoNoEncontradoException(
+                    'Proyecto',
+                    $id
+                );
+            }
+
+            if ((int)$project['user_id'] !== $userId) {
+                throw new AppException(
+                    'No tienes permiso para editar este proyecto.',
+                    403
+                );
+            }
+
+            Project::update(
+                $id,
+                $nombre,
+                $descripcion
+            );
+
+            echo json_encode([
+                'message' => 'Proyecto actualizado.'
+            ]);
+
+        } catch (AppException $e) {
+
+            http_response_code($e->getHttpCode());
+
+            echo $e->toJson();
+
         }
-
-        // Verificar que el proyecto pertenece al usuario
-        $project = Project::findById($id);
-        if (!$project || (int)$project['user_id'] !== $userId) {
-            http_response_code(403);
-            echo json_encode(['error' => 'No tienes permiso para editar este proyecto.']);
-            return;
-        }
-
-        Project::update($id, $nombre, $descripcion);
-        echo json_encode(['message' => 'Proyecto actualizado.']);
     }
 
-    public static function detail(int $id): void {
-        self::requireAuth();
-        $project = Project::findById($id);
+    public static function detail(int $id): void
+    {
+        try {
 
-        if (!$project) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Proyecto no encontrado.']);
-            return;
+            self::requireAuth();
+
+            $project = Project::findById($id);
+
+            if (!$project) {
+                throw new RecursoNoEncontradoException(
+                    'Proyecto',
+                    $id
+                );
+            }
+
+            echo json_encode([
+                'project' => $project
+            ]);
+
+        } catch (AppException $e) {
+
+            http_response_code($e->getHttpCode());
+
+            echo $e->toJson();
+
         }
-
-        echo json_encode(['project' => $project]);
     }
+
 }
