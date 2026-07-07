@@ -63,7 +63,7 @@ function createTestDatabase(): PDO
         );
 
         CREATE TABLE IF NOT EXISTS comments (
-            id INT AUTO_INCREMENT PRIMARY KEY,
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
             contenido TEXT NOT NULL,
             task_id INT NOT NULL,
             user_id INT NOT NULL,

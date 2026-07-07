@@ -1,66 +1,97 @@
 <?php
-require_once dirname(__DIR__) . '/models/Comment.php';
 
-class CommentController {
-    /**
-     * Listar comentarios en formato JSON limpio
-     */
-    public static function listByTask($taskId): void {
+require_once dirname(__DIR__) . '/models/Comment.php';
+require_once dirname(__DIR__) . '/exceptions/AppException.php';
+
+class CommentController
+{
+    public static function listByTask($taskId): void
+    {
         header('Content-Type: application/json');
+
         try {
             $comments = Comment::getByTaskId($taskId);
-            echo json_encode(["comments" => $comments]);
+
+            echo json_encode([
+                "comments" => $comments
+            ]);
+
         } catch (Throwable $e) {
             http_response_code(500);
-            echo json_encode(["error" => "Error al listar comentarios.", "detalles" => $e->getMessage()]);
+            echo json_encode([
+                'error' => 'Error al listar comentarios.'
+            ]);
         }
     }
 
-   /**
-     * Guardar un nuevo comentario enviado desde el frontend
-     */
-   public static function create(int $taskId): void {
+    public static function create(int $taskId): void
+    {
         header('Content-Type: application/json');
-        
-        if (session_status() === PHP_SESSION_NONE) session_start();
-    
-        if (!isset($_SESSION['user_id'])) {
-            http_response_code(401);
-            echo json_encode(["error" => "Sesión no iniciada."]);
-            return;
-        }
-
-        if (!$taskId) {
-            http_response_code(400);
-            echo json_encode(["error" => "No se pudo identificar el ID de la tarea."]);
-            return;
-        }
-
-        // 3. Leer el contenido JSON enviado desde el frontend
-        $json = file_get_contents('php://input');
-        $data = json_decode($json, true);
-        $contenido = isset($data['contenido']) ? trim($data['contenido']) : '';
-        $userId = $_SESSION['user_id'];
-
-        if (empty($contenido)) {
-            http_response_code(400);
-            echo json_encode(["error" => "El comentario no puede estar vacío."]);
-            return;
-        }
 
         try {
-            // Pasamos los 3 argumentos en el orden exacto que requiere el modelo
-            $idG = Comment::create($contenido, $taskId, $userId);
-            if ($idG) {
-                http_response_code(201);
-                echo json_encode(["message" => "Comentario agregado con éxito.", "id" => $idG]);
-            } else {
-                http_response_code(500);
-                echo json_encode(["error" => "No se pudo guardar el comentario en la base de datos."]);
+
+            if (session_status() === PHP_SESSION_NONE) {
+                session_start();
             }
+
+            if (!isset($_SESSION['user_id'])) {
+                throw new AuthException(
+                    'Debes iniciar sesión para acceder a este recurso.'
+                );
+            }
+
+            if (!$taskId) {
+                throw new AppException(
+                    'No se pudo identificar el ID de la tarea.',
+                    400
+                );
+            }
+
+            $json = file_get_contents('php://input');
+            $data = json_decode($json, true);
+
+            $contenido = isset($data['contenido'])
+                ? trim($data['contenido'])
+                : '';
+
+            $userId = $_SESSION['user_id'];
+
+            if (empty($contenido)) {
+                throw new AppException(
+                    'El comentario no puede estar vacío.',
+                    400
+                );
+            }
+
+            $idG = Comment::create(
+                $contenido,
+                $taskId,
+                $userId
+            );
+
+            if (!$idG) {
+                throw new AppException(
+                    'No se pudo guardar el comentario.',
+                    500
+                );
+            }
+
+            http_response_code(201);
+
+            echo json_encode([
+                "message" => "Comentario agregado con éxito.",
+                "id" => $idG
+            ]);
+
+        } catch (AppException $e) {
+            http_response_code($e->getHttpCode());
+            echo $e->toJson();
+
         } catch (Throwable $e) {
             http_response_code(500);
-            echo json_encode(["error" => "Error interno del servidor.", "detalles" => $e->getMessage()]);
+            echo json_encode([
+                'error' => 'Error interno del servidor.'
+            ]);
         }
-    } 
-}   
+    }
+}
