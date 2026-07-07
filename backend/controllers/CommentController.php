@@ -17,10 +17,10 @@ class CommentController
             ]);
 
         } catch (Throwable $e) {
-            throw new AppException(
-                'Error al listar comentarios.',
-                500
-            );
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Error al listar comentarios.'
+            ]);
         }
     }
 

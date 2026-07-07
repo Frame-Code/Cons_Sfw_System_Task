@@ -8,7 +8,9 @@ class TaskController
 {
     private static function requireAuth(): int
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if (empty($_SESSION['user_id'])) {
             throw new AuthException(
@@ -81,8 +83,14 @@ class TaskController
         try {
             self::requireAuth();
 
-            $estado = isset($_GET['estado']) && $_GET['estado'] !== '' ? trim($_GET['estado']) : null;
+            $estado    = isset($_GET['estado'])    && $_GET['estado']    !== '' ? trim($_GET['estado'])    : null;
             $prioridad = isset($_GET['prioridad']) && $_GET['prioridad'] !== '' ? trim($_GET['prioridad']) : null;
+
+            $estadosValidos     = ['Pendiente', 'En progreso', 'Terminado'];
+            $prioridadesValidas = ['Alta', 'Media', 'Baja'];
+
+            if ($estado    !== null && !in_array($estado, $estadosValidos))       $estado    = null;
+            if ($prioridad !== null && !in_array($prioridad, $prioridadesValidas)) $prioridad = null;
 
             $tasks = Task::getAllByProject($proyectoId, $estado, $prioridad);
 

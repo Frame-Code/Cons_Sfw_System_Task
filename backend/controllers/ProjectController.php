@@ -8,7 +8,9 @@ class ProjectController
 
     private static function requireAuth(): int
     {
-        session_start();
+        if (session_status() === PHP_SESSION_NONE) {
+            session_start();
+        }
 
         if (empty($_SESSION['user_id'])) {
             throw new AuthException(
